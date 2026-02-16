@@ -136,47 +136,61 @@
                         <span class="text-gray-300 group-hover:text-white transition-colors">Chat</span>
                     </a>
                     
-                    <!-- WEB IDE - Featured -->
-                    <a href="{% url 'ide_dashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-gradient-to-r from-intellihub-primary/20 to-purple-600/20 border border-intellihub-primary/50 hover:from-intellihub-primary/30 hover:to-purple-600/30 transition-all group">
-                        <i class="fas fa-code text-intellihub-primary group-hover:text-purple-400 transition-colors"></i>
-                        <span class="text-white font-semibold group-hover:text-purple-100 transition-colors">Web IDE</span>
-                        <span class="ml-auto text-xs bg-intellihub-primary text-white px-2 py-0.5 rounded-full">NEW</span>
-                    </a>
-                    
                     <div class="border-t border-gray-700 my-2"></div>
                     
-                    <a href="{% url 'image_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-image text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Generate Images</span>
-                    </a>
-                    <a href="{% url 'image_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-photo-video text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Image Gallery</span>
-                    </a>
-                    <a href="{% url 'video_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-video text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Generate Videos</span>
-                    </a>
-                    <a href="{% url 'video_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-film text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Video Gallery</span>
-                    </a>
-                    <a href="{% url 'audio_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-microphone text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Generate Audio</span>
-                    </a>
-                    <a href="{% url 'audio_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-music text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Audio Gallery</span>
-                    </a>
-                    <a href="{% url 'presentation_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-presentation-screen text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Generate Presentations</span>
-                    </a>
-                    <a href="{% url 'presentation_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
-                        <i class="fas fa-file-powerpoint text-gray-400 group-hover:text-white transition-colors"></i>
-                        <span class="text-gray-300 group-hover:text-white transition-colors">Presentation Gallery</span>
-                    </a>
+                    <!-- Others Dropdown -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-ellipsis-h text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Others</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-400 group-hover:text-white transition-all duration-200" :class="open ? 'rotate-180' : 'rotate-0'"></i>
+                        </button>
+                        
+                        <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95" class="mt-1 ml-4 space-y-1 border-l-2 border-gray-600 pl-4">
+                            
+                            <!-- WEB IDE - Featured -->
+                            <a href="{% url 'ide_dashboard' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-gradient-to-r from-intellihub-primary/20 to-purple-600/20 border border-intellihub-primary/50 hover:from-intellihub-primary/30 hover:to-purple-600/30 transition-all group">
+                                <i class="fas fa-code text-intellihub-primary group-hover:text-purple-400 transition-colors"></i>
+                                <span class="text-white font-semibold group-hover:text-purple-100 transition-colors">Web IDE</span>
+                                <span class="ml-auto text-xs bg-intellihub-primary text-white px-2 py-0.5 rounded-full">NEW</span>
+                            </a>
+                            
+                            <a href="{% url 'image_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-image text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Generate Images</span>
+                            </a>
+                            <a href="{% url 'image_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-photo-video text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Image Gallery</span>
+                            </a>
+                            <a href="{% url 'video_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-video text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Generate Videos</span>
+                            </a>
+                            <a href="{% url 'video_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-film text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Video Gallery</span>
+                            </a>
+                            <a href="{% url 'audio_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-microphone text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Generate Audio</span>
+                            </a>
+                            <a href="{% url 'audio_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-music text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Audio Gallery</span>
+                            </a>
+                            <a href="{% url 'presentation_generation' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-presentation-screen text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Generate Presentations</span>
+                            </a>
+                            <a href="{% url 'presentation_gallery' %}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors group">
+                                <i class="fas fa-file-powerpoint text-gray-400 group-hover:text-white transition-colors"></i>
+                                <span class="text-gray-300 group-hover:text-white transition-colors">Presentation Gallery</span>
+                            </a>
+                        </div>
+                    </div>
                 </nav>
 
                 <!-- Conversations Section -->
