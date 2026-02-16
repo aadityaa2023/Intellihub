@@ -1,0 +1,201 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Video Gallery - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-video mr-2 text-intellihub-primary"></i>
+    Video Gallery
+{% endblock %}
+
+{% block content %}
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Page Header -->
+            <div class="text-center mb-8">
+                <h2 class="text-4xl font-bold text-white mb-4">🎬 Video Gallery</h2>
+                <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+                    Your collection of AI-generated videos. View, download, and manage your creations.
+                </p>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-400">
+                        {% if page_obj.paginator.count %}
+                            Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} videos
+                        {% else %}
+                            No videos found
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{% url 'video_generation' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Generate New Video
+                    </a>
+                </div>
+            </div>
+
+            {% if video_requests %}
+                <!-- Video Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                    {% for request in video_requests %}
+                        <div class="bg-intellihub-surface rounded-xl border border-gray-800 overflow-hidden hover:border-intellihub-primary/30 transition-all duration-200 group">
+                            <!-- Video Thumbnail/Preview -->
+                            <div class="relative aspect-video bg-intellihub-surface-light">
+                                {% if request.videos.first %}
+                                    <video 
+                                        class="w-full h-full object-cover"
+                                        muted
+                                        preload="metadata"
+                                        onmouseover="this.play()" 
+                                        onmouseout="this.pause()"
+                                    >
+                                        <source src="{{ request.videos.first.video_url }}" type="{{ request.videos.first.mime_type }}">
+                                    </video>
+                                {% else %}
+                                    <div class="flex items-center justify-center h-full">
+                                        <div class="text-6xl">🎬</div>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Status Overlay -->
+                                <div class="absolute top-2 right-2">
+                                    {% if request.status == 'completed' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                            ✓ Completed
+                                        </span>
+                                    {% elif request.status == 'processing' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                            ⏳ Processing
+                                        </span>
+                                    {% elif request.status == 'failed' %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                                            ✗ Failed
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Duration Overlay -->
+                                {% if request.duration %}
+                                    <div class="absolute bottom-2 left-2">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-black/60 text-white">
+                                            {{ request.duration|floatformat:1 }}s
+                                        </span>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Play Button Overlay -->
+                                {% if request.videos.first %}
+                                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div class="w-12 h-12 bg-intellihub-primary/80 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Video Info -->
+                            <div class="p-4">
+                                <h3 class="font-medium text-white mb-2 line-clamp-2">
+                                    {{ request.prompt|truncatechars:60 }}
+                                </h3>
+                                
+                                <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                    <span>{{ request.created_at|date:"M j, Y" }}</span>
+                                    {% if request.generation_time %}
+                                        <span>Generated in {{ request.generation_time|floatformat:1 }}s</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-1 text-xs text-gray-400">
+                                        {% if request.width and request.height %}
+                                            <span>{{ request.width }}×{{ request.height }}</span>
+                                        {% endif %}
+                                        {% if request.fps %}
+                                            <span>• {{ request.fps }}fps</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <a href="{% url 'video_result' request.id %}" 
+                                       class="inline-flex items-center text-xs text-intellihub-primary hover:text-intellihub-secondary transition-colors">
+                                        View
+                                        <svg class="ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <div class="flex justify-center">
+                        <nav class="flex items-center space-x-2">
+                            {% if page_obj.has_previous %}
+                                <a href="?page=1" 
+                                   class="px-3 py-2 text-sm text-gray-400 hover:text-intellihub-primary transition-colors">
+                                    First
+                                </a>
+                                <a href="?page={{ page_obj.previous_page_number }}" 
+                                   class="px-3 py-2 text-sm text-gray-400 hover:text-intellihub-primary transition-colors">
+                                    Previous
+                                </a>
+                            {% endif %}
+
+                            <span class="px-3 py-2 text-sm text-white bg-intellihub-primary rounded">
+                                {{ page_obj.number }}
+                            </span>
+
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}" 
+                                   class="px-3 py-2 text-sm text-gray-400 hover:text-intellihub-primary transition-colors">
+                                    Next
+                                </a>
+                                <a href="?page={{ page_obj.paginator.num_pages }}" 
+                                   class="px-3 py-2 text-sm text-gray-400 hover:text-intellihub-primary transition-colors">
+                                    Last
+                                </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                {% endif %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-16">
+                    <div class="text-8xl mb-6">🎬</div>
+                    <h3 class="text-2xl font-bold text-white mb-4">No Videos Yet</h3>
+                    <p class="text-gray-400 mb-8 max-w-md mx-auto">
+                        You haven't generated any videos yet. Start creating amazing AI-generated videos!
+                    </p>
+                    <a href="{% url 'video_generation' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white rounded-xl transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Generate Your First Video
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-intellihub-surface border-t border-gray-800 mt-16">
+        <div class="container mx-auto px-4 py-6">
+            <div class="text-center text-gray-500 text-sm">
+                <p>&copy; 2024 IntelliHub. Powered by AI video generation technology.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'base_chat.html' %}
+{% load static %}
+
+{% block title %}Create Project - IntelliHub IDE{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="{% url 'ide_dashboard' %}" class="text-intellihub-primary hover:underline mb-4 inline-block">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+            </a>
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-intellihub-primary to-purple-500 bg-clip-text text-transparent">
+                Create New Project
+            </h1>
+            <p class="text-gray-400 mt-2">Start building your next amazing project</p>
+        </div>
+
+        <!-- Form -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Project Details</h2>
+                
+                <!-- Project Name -->
+                <div class="mb-4">
+                    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium mb-2">
+                        Project Name <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Description -->
+                <div class="mb-4">
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium mb-2">
+                        Description
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.description.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Project Type -->
+                <div class="mb-4">
+                    <label for="{{ form.project_type.id_for_label }}" class="block text-sm font-medium mb-2">
+                        Project Type <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.project_type }}
+                    {% if form.project_type.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.project_type.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-gray-500 text-sm mt-1">
+                        This will set up the initial project structure with appropriate files.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Settings</h2>
+                
+                <!-- Public Project -->
+                <div class="mb-4 flex items-center">
+                    {{ form.is_public }}
+                    <label for="{{ form.is_public.id_for_label }}" class="ml-2">
+                        Make this project public
+                    </label>
+                    <p class="text-gray-500 text-sm ml-4">
+                        Public projects can be viewed by anyone
+                    </p>
+                </div>
+                
+                <!-- AI Enabled -->
+                <div class="mb-4 flex items-center">
+                    {{ form.ai_enabled }}
+                    <label for="{{ form.ai_enabled.id_for_label }}" class="ml-2">
+                        Enable AI assistance
+                    </label>
+                    <p class="text-gray-500 text-sm ml-4">
+                        Get AI-powered code suggestions and help
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'ide_dashboard' %}" 
+                   class="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition duration-300">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-8 py-3 bg-gradient-to-r from-intellihub-primary to-purple-600 hover:from-purple-600 hover:to-intellihub-primary text-white font-semibold rounded-lg transition duration-300 shadow-lg hover:shadow-xl">
+                    <i class="fas fa-plus mr-2"></i>Create Project
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Apply styling to form fields
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input[type="text"], textarea, select');
+    inputs.forEach(input => {
+        input.classList.add('w-full', 'px-3', 'py-2', 'bg-gray-700', 'border', 'border-gray-600', 
+                           'rounded', 'text-gray-100', 'focus:outline-none', 'focus:ring-2', 
+                           'focus:ring-intellihub-primary');
+    });
+    
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.add('form-checkbox', 'text-intellihub-primary', 'rounded', 
+                              'focus:ring-intellihub-primary');
+    });
+});
+</script>
+{% endblock %}

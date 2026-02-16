@@ -1,0 +1,538 @@
+{% extends 'base_chat.html' %}
+{% load static %}
+
+{% block title %}Edit {{ presentation.title }} - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-edit mr-2 text-intellihub-primary"></i>
+    Edit Presentation
+{% endblock %}
+
+{% block content %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<div class="container mx-auto px-4 py-8" x-data="presentationEditor()">
+    
+    <!-- Header Section -->
+    <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 p-6 mb-8">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div class="flex-1">
+                <h1 class="text-3xl font-bold text-white mb-2" x-text="presentation.title">{{ presentation.title }}</h1>
+                <p class="text-gray-400 text-sm">
+                    <i class="fas fa-layer-group mr-1"></i>
+                    <span x-text="slides.length">{{ slides.count }}</span> slides
+                    <span class="mx-2">•</span>
+                    <i class="fas fa-calendar mr-1"></i>
+                    Last edited {{ presentation.updated_at|timesince }} ago
+                </p>
+            </div>
+            
+            <div class="flex flex-wrap gap-3">
+                <button @click="savePresentation()" 
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition flex items-center"
+                        :disabled="saving">
+                    <i class="fas fa-save mr-2"></i>
+                    <span x-text="saving ? 'Saving...' : 'Save Changes'">Save Changes</span>
+                </button>
+                
+                <a href="{% url 'presentation_preview' presentation.id %}" 
+                   class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center">
+                    <i class="fas fa-play mr-2"></i>
+                    Preview
+                </a>
+                
+                <a href="{% url 'presentation_result' presentation.id %}" 
+                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Editor Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Sidebar - Slide List -->
+        <div class="lg:col-span-1">
+            <div class="bg-gray-800/50 backdrop-blur rounded-xl border border-gray-700 p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-white">
+                        <i class="fas fa-list mr-2"></i>
+                        Slides
+                    </h2>
+                    <button @click="addNewSlide()" 
+                            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition">
+                        <i class="fas fa-plus mr-1"></i>
+                        Add
+                    </button>
+                </div>
+                
+                <!-- Slide List (Sortable) -->
+                <div id="slide-list" class="space-y-2 max-h-[600px] overflow-y-auto">
+                    <template x-for="(slide, index) in slides" :key="slide.id">
+                        <div @click="selectSlide(index)" 
+                             :class="currentSlideIndex === index ? 'bg-blue-600/30 border-blue-500' : 'bg-gray-700/50 border-gray-600'"
+                             class="p-3 rounded-lg border cursor-pointer hover:border-blue-500 transition group"
+                             :data-slide-id="slide.id">
+                            
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <i class="fas fa-grip-vertical text-gray-500 cursor-move"></i>
+                                        <span class="text-xs font-semibold text-gray-400" x-text="`Slide ${index + 1}`"></span>
+                                        <span class="px-2 py-0.5 bg-gray-600 text-gray-300 text-xs rounded" 
+                                              x-text="slide.slide_type"></span>
+                                    </div>
+                                    <h3 class="text-sm font-medium text-white truncate" 
+                                        x-text="slide.title || 'Untitled Slide'"></h3>
+                                </div>
+                                
+                                <button @click.stop="deleteSlide(index)" 
+                                        class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition">
+                                    <i class="fas fa-trash text-sm"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Slide Thumbnail Preview -->
+                            <div class="mt-2 p-2 bg-white rounded text-xs text-gray-800 truncate"
+                                 x-text="slide.content ? slide.content.substring(0, 60) + '...' : 'No content'">
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Section - Slide Editor -->
+        <div class="lg:col-span-2">
+            <div class="bg-gray-800/50 backdrop-blur rounded-xl border border-gray-700 p-6">
+                
+                <template x-if="currentSlideIndex !== null && slides[currentSlideIndex]">
+                    <div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-semibold text-white">
+                                <i class="fas fa-edit mr-2"></i>
+                                Edit Slide <span x-text="currentSlideIndex + 1"></span>
+                            </h2>
+                            <div class="flex gap-2">
+                                <button @click="duplicateSlide()" 
+                                        class="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition">
+                                    <i class="fas fa-copy mr-1"></i>
+                                    Duplicate
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Slide Type Selection -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-layer-group mr-1"></i>
+                                Slide Type
+                            </label>
+                            <select x-model="slides[currentSlideIndex].slide_type" 
+                                    @change="updateSlideType()"
+                                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="title">Title Slide</option>
+                                <option value="content">Content Slide</option>
+                                <option value="bullet_points">Bullet Points</option>
+                                <option value="two_column">Two Column Layout</option>
+                                <option value="image_text">Image with Text</option>
+                                <option value="chart">Chart/Graph</option>
+                                <option value="quote">Quote/Testimonial</option>
+                                <option value="call_to_action">Call to Action</option>
+                                <option value="thank_you">Thank You/Contact</option>
+                                <option value="section_break">Section Break</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Slide Title -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-heading mr-1"></i>
+                                Slide Title
+                            </label>
+                            <input type="text" 
+                                   x-model="slides[currentSlideIndex].title"
+                                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Enter slide title...">
+                        </div>
+                        
+                        <!-- Slide Subtitle (conditional) -->
+                        <div class="mb-6" x-show="['title', 'section_break'].includes(slides[currentSlideIndex].slide_type)">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-text-height mr-1"></i>
+                                Subtitle
+                            </label>
+                            <input type="text" 
+                                   x-model="slides[currentSlideIndex].subtitle"
+                                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Enter subtitle...">
+                        </div>
+                        
+                        <!-- Slide Content -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-align-left mr-1"></i>
+                                Content
+                            </label>
+                            <textarea x-model="slides[currentSlideIndex].content"
+                                      rows="8"
+                                      class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                                      placeholder="Enter slide content... (supports bullet points with - or •)"></textarea>
+                            
+                            <p class="mt-2 text-xs text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Tip: Use "-" at the start of lines for bullet points. Use double line breaks for paragraphs.
+                            </p>
+                        </div>
+                        
+                        <!-- Speaker Notes -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-sticky-note mr-1"></i>
+                                Speaker Notes
+                            </label>
+                            <textarea x-model="slides[currentSlideIndex].notes"
+                                      rows="3"
+                                      class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                      placeholder="Add notes for this slide (not visible in presentation)..."></textarea>
+                        </div>
+                        
+                        <!-- Layout Selection -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-th-large mr-1"></i>
+                                Layout
+                            </label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <button @click="slides[currentSlideIndex].layout = 'default'"
+                                        :class="slides[currentSlideIndex].layout === 'default' ? 'border-blue-500 bg-blue-600/20' : 'border-gray-600'"
+                                        class="p-3 border-2 rounded-lg hover:border-blue-500 transition">
+                                    <div class="text-white text-xs text-center">Default</div>
+                                </button>
+                                <button @click="slides[currentSlideIndex].layout = 'centered'"
+                                        :class="slides[currentSlideIndex].layout === 'centered' ? 'border-blue-500 bg-blue-600/20' : 'border-gray-600'"
+                                        class="p-3 border-2 rounded-lg hover:border-blue-500 transition">
+                                    <div class="text-white text-xs text-center">Centered</div>
+                                </button>
+                                <button @click="slides[currentSlideIndex].layout = 'split_half'"
+                                        :class="slides[currentSlideIndex].layout === 'split_half' ? 'border-blue-500 bg-blue-600/20' : 'border-gray-600'"
+                                        class="p-3 border-2 rounded-lg hover:border-blue-500 transition">
+                                    <div class="text-white text-xs text-center">Split 50/50</div>
+                                </button>
+                                <button @click="slides[currentSlideIndex].layout = 'minimal'"
+                                        :class="slides[currentSlideIndex].layout === 'minimal' ? 'border-blue-500 bg-blue-600/20' : 'border-gray-600'"
+                                        class="p-3 border-2 rounded-lg hover:border-blue-500 transition">
+                                    <div class="text-white text-xs text-center">Minimal</div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Color Customization -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <i class="fas fa-fill-drip mr-1"></i>
+                                    Background
+                                </label>
+                                <input type="color" 
+                                       x-model="slides[currentSlideIndex].background_color"
+                                       class="w-full h-10 bg-gray-700 border border-gray-600 rounded-lg cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <i class="fas fa-font mr-1"></i>
+                                    Text Color
+                                </label>
+                                <input type="color" 
+                                       x-model="slides[currentSlideIndex].text_color"
+                                       class="w-full h-10 bg-gray-700 border border-gray-600 rounded-lg cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <i class="fas fa-palette mr-1"></i>
+                                    Accent Color
+                                </label>
+                                <input type="color" 
+                                       x-model="slides[currentSlideIndex].accent_color"
+                                       class="w-full h-10 bg-gray-700 border border-gray-600 rounded-lg cursor-pointer">
+                            </div>
+                        </div>
+                        
+                        <!-- Live Preview -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-eye mr-1"></i>
+                                Live Preview
+                            </label>
+                            <div class="bg-white rounded-lg p-6 min-h-[200px]"
+                                 :style="`background-color: ${slides[currentSlideIndex].background_color || '#ffffff'}; color: ${slides[currentSlideIndex].text_color || '#000000'}`">
+                                <h2 class="text-2xl font-bold mb-3" x-text="slides[currentSlideIndex].title || 'Untitled Slide'"></h2>
+                                <div class="prose prose-sm max-w-none" x-html="formatContent(slides[currentSlideIndex].content)"></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                
+                <!-- No Slide Selected State -->
+                <template x-if="currentSlideIndex === null || !slides[currentSlideIndex]">
+                    <div class="text-center py-20">
+                        <i class="fas fa-file-powerpoint text-6xl text-gray-600 mb-4"></i>
+                        <p class="text-gray-400 text-lg">Select a slide from the list or add a new one to start editing</p>
+                        <button @click="addNewSlide()" 
+                                class="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Your First Slide
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success/Error Messages -->
+    <div x-show="message" 
+         x-transition
+         @click="message = ''"
+         class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg cursor-pointer z-50"
+         :class="messageType === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
+        <i :class="messageType === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'" class="mr-2"></i>
+        <span x-text="message"></span>
+    </div>
+</div>
+
+<script>
+function presentationEditor() {
+    return {
+        presentation: {
+            id: {{ presentation.id }},
+            title: '{{ presentation.title|escapejs }}',
+            updated_at: '{{ presentation.updated_at|timesince }}'
+        },
+        slides: [
+            {% for slide in slides %}
+            {
+                id: {{ slide.id }},
+                slide_number: {{ slide.slide_number }},
+                title: '{{ slide.title|escapejs|default:"" }}',
+                subtitle: '{{ slide.subtitle|escapejs|default:"" }}',
+                content: `{{ slide.content|escapejs|default:"" }}`,
+                notes: `{{ slide.notes|escapejs|default:"" }}`,
+                slide_type: '{{ slide.slide_type }}',
+                layout: '{{ slide.layout }}',
+                background_color: '{{ slide.background_color|default:"#ffffff" }}',
+                text_color: '{{ slide.text_color|default:"#000000" }}',
+                accent_color: '{{ slide.accent_color|default:"#667eea" }}'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        currentSlideIndex: null,
+        saving: false,
+        message: '',
+        messageType: 'success',
+        
+        init() {
+            // Select first slide by default
+            if (this.slides.length > 0) {
+                this.currentSlideIndex = 0;
+            }
+            
+            // Initialize Sortable for drag-and-drop
+            this.$nextTick(() => {
+                this.initSortable();
+            });
+        },
+        
+        initSortable() {
+            const el = document.getElementById('slide-list');
+            if (el) {
+                new Sortable(el, {
+                    animation: 150,
+                    handle: '.fa-grip-vertical',
+                    onEnd: (evt) => {
+                        // Reorder slides array
+                        const item = this.slides.splice(evt.oldIndex, 1)[0];
+                        this.slides.splice(evt.newIndex, 0, item);
+                        
+                        // Update slide numbers
+                        this.slides.forEach((slide, index) => {
+                            slide.slide_number = index + 1;
+                        });
+                        
+                        // Update current selection
+                        if (this.currentSlideIndex === evt.oldIndex) {
+                            this.currentSlideIndex = evt.newIndex;
+                        }
+                    }
+                });
+            }
+        },
+        
+        selectSlide(index) {
+            this.currentSlideIndex = index;
+        },
+        
+        addNewSlide() {
+            const newSlide = {
+                id: null, // Will be assigned by backend
+                slide_number: this.slides.length + 1,
+                title: 'New Slide',
+                subtitle: '',
+                content: '',
+                notes: '',
+                slide_type: 'content',
+                layout: 'default',
+                background_color: '#ffffff',
+                text_color: '#000000',
+                accent_color: '#667eea'
+            };
+            
+            this.slides.push(newSlide);
+            this.currentSlideIndex = this.slides.length - 1;
+        },
+        
+        deleteSlide(index) {
+            if (confirm('Are you sure you want to delete this slide?')) {
+                this.slides.splice(index, 1);
+                
+                // Update slide numbers
+                this.slides.forEach((slide, idx) => {
+                    slide.slide_number = idx + 1;
+                });
+                
+                // Adjust current selection
+                if (this.currentSlideIndex >= this.slides.length) {
+                    this.currentSlideIndex = this.slides.length - 1;
+                }
+                if (this.slides.length === 0) {
+                    this.currentSlideIndex = null;
+                }
+            }
+        },
+        
+        duplicateSlide() {
+            if (this.currentSlideIndex !== null) {
+                const currentSlide = this.slides[this.currentSlideIndex];
+                const duplicated = {
+                    ...currentSlide,
+                    id: null,
+                    slide_number: this.slides.length + 1,
+                    title: currentSlide.title + ' (Copy)'
+                };
+                
+                this.slides.push(duplicated);
+                this.currentSlideIndex = this.slides.length - 1;
+            }
+        },
+        
+        updateSlideType() {
+            // Optionally adjust default content based on slide type
+            const slide = this.slides[this.currentSlideIndex];
+            if (slide.slide_type === 'bullet_points' && !slide.content) {
+                slide.content = '- First point\n- Second point\n- Third point';
+            }
+        },
+        
+        formatContent(content) {
+            if (!content) return '';
+            
+            // Convert bullet points
+            let formatted = content.replace(/^- (.+)$/gm, '<li>$1</li>');
+            formatted = formatted.replace(/^• (.+)$/gm, '<li>$1</li>');
+            
+            // Wrap lists
+            if (formatted.includes('<li>')) {
+                formatted = '<ul class="list-disc list-inside space-y-2">' + formatted + '</ul>';
+            }
+            
+            // Convert line breaks to paragraphs
+            formatted = formatted.replace(/\n\n/g, '</p><p class="mb-2">');
+            
+            if (!formatted.includes('<ul>')) {
+                formatted = '<p class="mb-2">' + formatted + '</p>';
+            }
+            
+            return formatted;
+        },
+        
+        async savePresentation() {
+            this.saving = true;
+            
+            try {
+                const response = await fetch(`/presentations/edit/{{ presentation.id }}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        slides: this.slides
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showMessage('Presentation saved successfully!', 'success');
+                    
+                    // Update slide IDs if new slides were created
+                    if (data.slides) {
+                        data.slides.forEach((savedSlide, index) => {
+                            if (this.slides[index]) {
+                                this.slides[index].id = savedSlide.id;
+                            }
+                        });
+                    }
+                } else {
+                    this.showMessage('Error saving presentation: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                this.showMessage('Network error: ' + error.message, 'error');
+            }
+            
+            this.saving = false;
+        },
+        
+        showMessage(msg, type = 'success') {
+            this.message = msg;
+            this.messageType = type;
+            
+            setTimeout(() => {
+                this.message = '';
+            }, 4000);
+        }
+    }
+}
+</script>
+
+<style>
+#slide-list > div {
+    transition: all 0.3s ease;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+/* Custom scrollbar for slide list */
+#slide-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#slide-list::-webkit-scrollbar-track {
+    background: rgba(75, 85, 99, 0.3);
+    border-radius: 3px;
+}
+
+#slide-list::-webkit-scrollbar-thumb {
+    background: rgba(107, 114, 128, 0.8);
+    border-radius: 3px;
+}
+
+#slide-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.8);
+}
+</style>
+{% endblock %}

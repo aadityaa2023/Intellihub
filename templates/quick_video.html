@@ -1,0 +1,149 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Quick Video - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-video mr-2 text-intellihub-primary"></i>
+    Quick Video
+{% endblock %}
+
+{% block extra_scripts %}
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <!-- Page Header -->
+            <div class="text-center mb-8 animate-fade-in">
+                <h2 class="text-4xl font-bold text-white mb-4">
+                    ⚡ Quick Video
+                </h2>
+                <p class="text-lg text-gray-400">
+                    Generate a video instantly with just a description. Fast and simple!
+                </p>
+            </div>
+
+            <!-- Quick Generation Form -->
+            <div class="bg-intellihub-surface rounded-2xl p-8 border border-gray-800 animate-slide-up">
+                <form method="post" class="space-y-6" x-data="{ 
+                    isGenerating: false
+                }">
+                    {% csrf_token %}
+                    
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                        <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                            {% for error in form.non_field_errors %}
+                                <p class="text-red-400 text-sm">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Video Prompt -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">
+                            {{ form.prompt.label }}
+                        </label>
+                        {{ form.prompt }}
+                        {% if form.prompt.help_text %}
+                            <p class="text-xs text-gray-500 mt-2">{{ form.prompt.help_text }}</p>
+                        {% endif %}
+                        {% if form.prompt.errors %}
+                            {% for error in form.prompt.errors %}
+                                <p class="text-red-400 text-xs mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button 
+                            type="submit" 
+                            :disabled="isGenerating"
+                            @click="isGenerating = true"
+                            class="w-full bg-gradient-to-r from-intellihub-primary to-intellihub-secondary hover:from-intellihub-primary-dark hover:to-intellihub-primary disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] text-lg"
+                        >
+                            <span x-show="!isGenerating" class="flex items-center justify-center">
+                                🚀 Generate Video Now
+                            </span>
+                            <span x-show="isGenerating" class="flex items-center justify-center">
+                                <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Creating Your Video... (Up to 1 minute)
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Quick Link to Advanced -->
+                    <div class="text-center pt-4 border-t border-gray-700">
+                        <p class="text-sm text-gray-400 mb-2">Need more control?</p>
+                        <a href="{% url 'video_generation' %}" 
+                           class="inline-flex items-center text-intellihub-primary hover:text-intellihub-secondary transition-colors text-sm font-medium">
+                            Advanced Video Generation
+                            <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="mt-8 bg-gradient-to-r from-intellihub-primary/10 to-intellihub-secondary/10 rounded-xl p-6 border border-intellihub-primary/20">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                    💡 Quick Tips
+                </h3>
+                <div class="space-y-2 text-sm text-gray-300">
+                    <p>• Describe the action: "A cat jumping over a fence"</p>
+                    <p>• Include the setting: "in a sunny garden"</p>
+                    <p>• Mention the style: "cinematic slow motion"</p>
+                    <p>• Keep it clear and specific for best results</p>
+                </div>
+            </div>
+
+            <!-- Example Prompts -->
+            <div class="mt-6 bg-intellihub-surface rounded-xl p-6 border border-gray-800">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    ✨ Example Prompts
+                </h3>
+                <div class="grid gap-3">
+                    <div class="bg-intellihub-surface-light rounded-lg p-3 cursor-pointer hover:border-intellihub-primary border border-transparent transition-colors"
+                         @click="document.querySelector('textarea[name=prompt]').value = 'A majestic eagle soaring through clouds at sunset, cinematic aerial shot'">
+                        <p class="text-sm text-gray-300">"A majestic eagle soaring through clouds at sunset, cinematic aerial shot"</p>
+                    </div>
+                    <div class="bg-intellihub-surface-light rounded-lg p-3 cursor-pointer hover:border-intellihub-primary border border-transparent transition-colors"
+                         @click="document.querySelector('textarea[name=prompt]').value = 'Ocean waves crashing on a rocky shore, dramatic lighting, slow motion'">
+                        <p class="text-sm text-gray-300">"Ocean waves crashing on a rocky shore, dramatic lighting, slow motion"</p>
+                    </div>
+                    <div class="bg-intellihub-surface-light rounded-lg p-3 cursor-pointer hover:border-intellihub-primary border border-transparent transition-colors"
+                         @click="document.querySelector('textarea[name=prompt]').value = 'A bustling city street at night with neon lights reflecting on wet pavement'">
+                        <p class="text-sm text-gray-300">"A bustling city street at night with neon lights reflecting on wet pavement"</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-3">Click any example to use it as your prompt</p>
+            </div>
+        </div>
+    </main>
+    <!-- Footer -->
+    <footer class="bg-intellihub-surface border-t border-gray-800 mt-16">
+        <div class="container mx-auto px-4 py-6">
+            <div class="text-center text-gray-500 text-sm">
+                <p>&copy; 2024 IntelliHub. Quick video generation powered by AI.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

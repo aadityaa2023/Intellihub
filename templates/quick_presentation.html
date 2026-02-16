@@ -1,0 +1,243 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Quick Presentation - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-bolt mr-2 text-intellihub-primary"></i>
+    Quick Presentation
+{% endblock %}
+
+{% block content %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<div class="container mx-auto px-4 py-8 max-w-4xl" x-data="quickPresentation()">
+    <!-- Page Header -->
+    <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-white mb-4">⚡ Quick Presentation Generator</h2>
+        <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+            Generate a professional presentation in seconds! Just tell us your topic and we'll create a complete slide deck with smart defaults.
+        </p>
+    </div>
+
+    <!-- Main Form -->
+    <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 p-8">
+        <form method="post" @submit="isGenerating = true" x-ref="quickForm">
+            {% csrf_token %}
+            
+            <!-- Topic Input -->
+            <div class="mb-8">
+                <label for="{{ form.topic.id_for_label }}" class="block text-xl font-semibold text-white mb-4">
+                    What do you want to create a presentation about?
+                </label>
+                {{ form.topic }}
+                {% if form.topic.errors %}
+                    <div class="text-red-400 text-sm mt-2">{{ form.topic.errors|first }}</div>
+                {% endif %}
+                <div class="text-sm text-gray-400 mt-2">
+                    💡 Be specific! Include key points, objectives, or main themes you want to cover.
+                </div>
+            </div>
+
+            <!-- Quick Settings -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Slide Count -->
+                <div>
+                    <label for="{{ form.slide_count.id_for_label }}" class="block text-lg font-medium text-white mb-3">
+                        Number of Slides
+                    </label>
+                    {{ form.slide_count }}
+                    {% if form.slide_count.errors %}
+                        <div class="text-red-400 text-sm mt-1">{{ form.slide_count.errors|first }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Presentation Type -->
+                <div>
+                    <label for="{{ form.presentation_type.id_for_label }}" class="block text-lg font-medium text-white mb-3">
+                        Presentation Type
+                    </label>
+                    {{ form.presentation_type }}
+                    {% if form.presentation_type.errors %}
+                        <div class="text-red-400 text-sm mt-1">{{ form.presentation_type.errors|first }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+                <div class="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-6">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-red-300">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Generate Button -->
+            <div class="text-center">
+                <button type="submit" 
+                        class="bg-gradient-to-r from-intellihub-primary to-intellihub-secondary text-white font-bold py-4 px-12 rounded-xl hover:from-intellihub-primary-dark hover:to-intellihub-primary transition-all duration-300 transform hover:scale-105 shadow-xl"
+                        x-bind:disabled="isGenerating"
+                        x-bind:class="isGenerating ? 'opacity-50 cursor-not-allowed' : ''">
+                    <template x-if="!isGenerating">
+                        <span class="flex items-center text-lg">
+                            <i class="fas fa-magic mr-3"></i>
+                            Generate My Presentation
+                        </span>
+                    </template>
+                    <template x-if="isGenerating">
+                        <span class="flex items-center text-lg">
+                            <i class="fas fa-spinner animate-spin mr-3"></i>
+                            Creating Your Presentation...
+                        </span>
+                    </template>
+                </button>
+                
+                <p class="text-gray-400 text-sm mt-4">
+                    ⚡ Usually takes 30-60 seconds to generate your complete presentation
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Features -->
+    <div class="grid md:grid-cols-3 gap-6 mt-12">
+        <div class="text-center p-6 bg-gradient-to-br from-blue-900/20 to-blue-800/10 rounded-xl border border-blue-700/30">
+            <div class="text-4xl mb-4">🤖</div>
+            <h3 class="text-lg font-semibold text-white mb-2">AI-Powered Content</h3>
+            <p class="text-gray-400 text-sm">
+                Advanced AI generates relevant, engaging content tailored to your topic and audience.
+            </p>
+        </div>
+        
+        <div class="text-center p-6 bg-gradient-to-br from-green-900/20 to-green-800/10 rounded-xl border border-green-700/30">
+            <div class="text-4xl mb-4">⚡</div>
+            <h3 class="text-lg font-semibold text-white mb-2">Lightning Fast</h3>
+            <p class="text-gray-400 text-sm">
+                Get a complete presentation in under a minute. No more hours of manual slide creation.
+            </p>
+        </div>
+        
+        <div class="text-center p-6 bg-gradient-to-br from-purple-900/20 to-purple-800/10 rounded-xl border border-purple-700/30">
+            <div class="text-4xl mb-4">🎨</div>
+            <h3 class="text-lg font-semibold text-white mb-2">Professional Design</h3>
+            <p class="text-gray-400 text-sm">
+                Beautiful, modern layouts with consistent styling and visual hierarchy.
+            </p>
+        </div>
+    </div>
+
+    <!-- Examples -->
+    <div class="mt-12">
+        <h3 class="text-2xl font-bold text-white mb-6 text-center">
+            Example Topics to Get You Started
+        </h3>
+        
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button @click="fillExample('Marketing strategy for a new mobile app targeting Gen Z users')"
+                    class="text-left p-4 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700 hover:border-intellihub-primary/50 transition-all">
+                <div class="font-medium text-white mb-1">📱 Mobile App Marketing</div>
+                <div class="text-sm text-gray-400">Marketing strategy for a new mobile app targeting Gen Z users</div>
+            </button>
+            
+            <button @click="fillExample('Quarterly business review covering sales performance, market analysis, and future goals')"
+                    class="text-left p-4 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700 hover:border-intellihub-primary/50 transition-all">
+                <div class="font-medium text-white mb-1">📊 Business Review</div>
+                <div class="text-sm text-gray-400">Quarterly review with sales performance and market analysis</div>
+            </button>
+            
+            <button @click="fillExample('Introduction to machine learning concepts, algorithms, and real-world applications')"
+                    class="text-left p-4 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700 hover:border-intellihub-primary/50 transition-all">
+                <div class="font-medium text-white mb-1">🤖 Machine Learning 101</div>
+                <div class="text-sm text-gray-400">Introduction to ML concepts and applications</div>
+            </button>
+            
+            <button @click="fillExample('Project proposal for implementing sustainable practices in office environments')"
+                    class="text-left p-4 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700 hover:border-intellihub-primary/50 transition-all">
+                <div class="font-medium text-white mb-1">🌱 Sustainability Project</div>
+                <div class="text-sm text-gray-400">Office sustainability implementation proposal</div>
+            </button>
+            
+            <button @click="fillExample('Training presentation on cybersecurity best practices for remote employees')"
+                    class="text-left p-4 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700 hover:border-intellihub-primary/50 transition-all">
+                <div class="font-medium text-white mb-1">🔒 Cybersecurity Training</div>
+                <div class="text-sm text-gray-400">Security best practices for remote work</div>
+            </button>
+            
+            <button @click="fillExample('Product launch presentation showcasing features, benefits, and go-to-market strategy')"
+                    class="text-left p-4 bg-gray-800/50 hover:bg-gray-700/50 rounded-lg border border-gray-700 hover:border-intellihub-primary/50 transition-all">
+                <div class="font-medium text-white mb-1">🚀 Product Launch</div>
+                <div class="text-sm text-gray-400">Feature showcase and go-to-market strategy</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="mt-12 bg-gradient-to-br from-intellihub-primary/10 to-intellihub-secondary/10 backdrop-blur rounded-xl border border-intellihub-primary/20 p-6">
+        <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+            <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>
+            Quick Tips for Better Results
+        </h3>
+        
+        <div class="grid md:grid-cols-2 gap-4 text-sm text-gray-300">
+            <div class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                <span>Include your main objectives and key points you want to cover</span>
+            </div>
+            <div class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                <span>Mention your target audience if relevant (executives, students, etc.)</span>
+            </div>
+            <div class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                <span>Be specific about industry, context, or use case</span>
+            </div>
+            <div class="flex items-start">
+                <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                <span>Choose the right presentation type for your purpose</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex justify-center mt-8 space-x-4">
+        <a href="{% url 'presentation_generation' %}" 
+           class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors flex items-center">
+            <i class="fas fa-cogs mr-2"></i>
+            Advanced Options
+        </a>
+        <a href="{% url 'presentation_gallery' %}" 
+           class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors flex items-center">
+            <i class="fas fa-images mr-2"></i>
+            My Presentations
+        </a>
+    </div>
+</div>
+
+<script>
+function quickPresentation() {
+    return {
+        isGenerating: false,
+        
+        fillExample(text) {
+            // Find the topic textarea and fill it
+            const topicField = document.querySelector('textarea[name="topic"]');
+            if (topicField) {
+                topicField.value = text;
+                topicField.focus();
+            }
+        },
+        
+        init() {
+            // Add form submission handling
+            this.$refs.quickForm.addEventListener('submit', (e) => {
+                this.isGenerating = true;
+                
+                // Disable form elements
+                const inputs = this.$refs.quickForm.querySelectorAll('input, textarea, select, button');
+                inputs.forEach(input => input.disabled = true);
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

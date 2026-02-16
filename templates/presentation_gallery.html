@@ -1,0 +1,338 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Presentation Gallery - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-images mr-2 text-intellihub-primary"></i>
+    Presentation Gallery
+{% endblock %}
+
+{% block content %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<div class="container mx-auto px-4 py-8" x-data="presentationGallery()">
+    <!-- Page Header -->
+    <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-white mb-4">🎨 My Presentations</h2>
+        <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+            Manage your AI-generated presentations. View, edit, share, and organize your presentation collection.
+        </p>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
+        <div class="flex items-center space-x-4">
+            <button @click="viewMode = 'grid'" 
+                    :class="viewMode === 'grid' ? 'bg-intellihub-primary text-white' : 'bg-gray-700 text-gray-400'"
+                    class="p-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                </svg>
+            </button>
+            <button @click="viewMode = 'list'" 
+                    :class="viewMode === 'list' ? 'bg-intellihub-primary text-white' : 'bg-gray-700 text-gray-400'"
+                    class="p-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+            </button>
+            
+            <div class="text-sm text-gray-400">
+                {% if page_obj.paginator.count %}
+                    {{ page_obj.paginator.count }} presentation{{ page_obj.paginator.count|pluralize }}
+                {% else %}
+                    No presentations found
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <select x-model="sortBy" @change="applySorting()" 
+                    class="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-intellihub-primary">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name">Name A-Z</option>
+                <option value="slides">Most Slides</option>
+            </select>
+            
+            <a href="{% url 'presentation_generation' %}" 
+               class="bg-gradient-to-r from-intellihub-primary to-intellihub-secondary text-white font-semibold py-2 px-4 rounded-lg hover:from-intellihub-primary-dark hover:to-intellihub-primary transition-all duration-300">
+                Create New
+            </a>
+        </div>
+    </div>
+
+    <!-- Presentations Grid/List -->
+    {% if presentations %}
+        <!-- Grid View -->
+        <div x-show="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for presentation in presentations %}
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 hover:border-intellihub-primary/50 transition-all group">
+                <!-- Presentation Thumbnail -->
+                <div class="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 rounded-t-xl p-4 flex flex-col justify-center">
+                    <div class="text-white font-semibold text-lg mb-2 line-clamp-2">
+                        {{ presentation.title }}
+                    </div>
+                    {% if presentation.description %}
+                        <div class="text-gray-400 text-sm line-clamp-2">{{ presentation.description|truncatewords:10 }}</div>
+                    {% endif %}
+                    
+                    <!-- Quick Info -->
+                    <div class="mt-auto flex items-center justify-between text-xs text-gray-500">
+                        <span>{{ presentation.slide_count_actual }} slides</span>
+                        <span class="capitalize">{{ presentation.theme }}</span>
+                    </div>
+                </div>
+                
+                <!-- Presentation Info -->
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs
+                                {% if presentation.status == 'completed' %}bg-green-900/30 text-green-400{% elif presentation.status == 'failed' %}bg-red-900/30 text-red-400{% elif presentation.status == 'generating' %}bg-yellow-900/30 text-yellow-400{% else %}bg-gray-700 text-gray-400{% endif %}">
+                                {{ presentation.get_status_display }}
+                            </span>
+                            <span class="text-xs text-gray-500 capitalize">{{ presentation.get_presentation_type_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-3">
+                        Created {{ presentation.created_at|timesince }} ago
+                        {% if presentation.generation_time %}
+                            • Generated in {{ presentation.generation_time|floatformat:1 }}s
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex items-center justify-between">
+                        {% if presentation.status == 'completed' %}
+                            <a href="{% url 'presentation_result' presentation.id %}" 
+                               class="flex-1 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors text-center mr-2">
+                                View
+                            </a>
+                            <a href="{% url 'presentation_preview' presentation.id %}" 
+                               class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors">
+                                <i class="fas fa-play text-sm"></i>
+                            </a>
+                        {% elif presentation.status == 'failed' %}
+                            <div class="flex-1 bg-red-900/30 text-red-400 py-2 px-3 rounded-lg text-sm text-center mr-2">
+                                Failed
+                            </div>
+                            <button class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors"
+                                    @click="retryGeneration({{ presentation.id }})">
+                                <i class="fas fa-redo text-sm"></i>
+                            </button>
+                        {% elif presentation.status == 'generating' %}
+                            <div class="flex-1 bg-yellow-900/30 text-yellow-400 py-2 px-3 rounded-lg text-sm text-center">
+                                <i class="fas fa-spinner animate-spin mr-1"></i>
+                                Generating...
+                            </div>
+                        {% else %}
+                            <div class="flex-1 bg-gray-700 text-gray-400 py-2 px-3 rounded-lg text-sm text-center">
+                                Draft
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Dropdown Menu -->
+                <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity" 
+                     x-data="{ open: false }">
+                    <button @click="open = !open" 
+                            class="bg-gray-800/80 hover:bg-gray-700 text-white p-2 rounded-full">
+                        <i class="fas fa-ellipsis-v text-sm"></i>
+                    </button>
+                    
+                    <div x-show="open" 
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                        
+                        {% if presentation.status == 'completed' %}
+                        <a href="{% url 'presentation_edit' presentation.id %}" 
+                           class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                            <i class="fas fa-edit mr-2"></i>Edit
+                        </a>
+                        <a href="{% url 'presentation_share' presentation.id %}" 
+                           class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                            <i class="fas fa-share mr-2"></i>Share
+                        </a>
+                        <a href="{% url 'presentation_export' presentation.id %}" 
+                           class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </a>
+                        <hr class="border-gray-700">
+                        {% endif %}
+                        
+                        <button @click="duplicatePresentation({{ presentation.id }})" 
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                            <i class="fas fa-copy mr-2"></i>Duplicate
+                        </button>
+                        <button @click="deletePresentation({{ presentation.id }})" 
+                                class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-900/30 hover:text-red-300">
+                            <i class="fas fa-trash mr-2"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- List View -->
+        <div x-show="viewMode === 'list'" class="space-y-4">
+            {% for presentation in presentations %}
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 hover:border-intellihub-primary/50 transition-all p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-white mb-1 truncate">{{ presentation.title }}</h3>
+                                {% if presentation.description %}
+                                    <p class="text-gray-400 text-sm mb-2 line-clamp-1">{{ presentation.description }}</p>
+                                {% endif %}
+                                
+                                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                                    <span>{{ presentation.slide_count_actual }} slides</span>
+                                    <span class="capitalize">{{ presentation.get_presentation_type_display }}</span>
+                                    <span class="capitalize">{{ presentation.theme }}</span>
+                                    <span>{{ presentation.created_at|timesince }} ago</span>
+                                    {% if presentation.generation_time %}
+                                        <span>{{ presentation.generation_time|floatformat:1 }}s</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs
+                                    {% if presentation.status == 'completed' %}bg-green-900/30 text-green-400{% elif presentation.status == 'failed' %}bg-red-900/30 text-red-400{% elif presentation.status == 'generating' %}bg-yellow-900/30 text-yellow-400{% else %}bg-gray-700 text-gray-400{% endif %}">
+                                    {{ presentation.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-3 ml-4">
+                        {% if presentation.status == 'completed' %}
+                            <a href="{% url 'presentation_result' presentation.id %}" 
+                               class="bg-intellihub-primary hover:bg-intellihub-primary-dark text-white py-2 px-4 rounded-lg text-sm transition-colors">
+                                View
+                            </a>
+                            <a href="{% url 'presentation_preview' presentation.id %}" 
+                               class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors">
+                                <i class="fas fa-play"></i>
+                            </a>
+                        {% elif presentation.status == 'failed' %}
+                            <button class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm transition-colors"
+                                    @click="retryGeneration({{ presentation.id }})">
+                                Retry
+                            </button>
+                        {% elif presentation.status == 'generating' %}
+                            <div class="bg-yellow-900/30 text-yellow-400 py-2 px-4 rounded-lg text-sm">
+                                <i class="fas fa-spinner animate-spin mr-2"></i>
+                                Generating...
+                            </div>
+                        {% endif %}
+                        
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" 
+                                    class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            
+                            <!-- Dropdown menu similar to grid view -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex justify-center mt-12">
+            <nav class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1" class="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                {% endif %}
+
+                <span class="px-4 py-2 bg-intellihub-primary text-white rounded font-medium">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-gray-300 hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-16">
+            <div class="text-8xl mb-6">🎯</div>
+            <h3 class="text-2xl font-semibold text-white mb-4">No presentations yet</h3>
+            <p class="text-gray-400 mb-8 max-w-md mx-auto">
+                Create your first AI-powered presentation! Generate professional slide decks in minutes.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <a href="{% url 'presentation_generation' %}" 
+                   class="bg-gradient-to-r from-intellihub-primary to-intellihub-secondary text-white font-semibold py-3 px-6 rounded-lg hover:from-intellihub-primary-dark hover:to-intellihub-primary transition-all duration-300">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create Presentation
+                </a>
+                <a href="{% url 'quick_presentation' %}" 
+                   class="bg-gray-700 hover:bg-gray-600 text-white py-3 px-6 rounded-lg transition-colors">
+                    <i class="fas fa-bolt mr-2"></i>
+                    Quick Generate
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function presentationGallery() {
+    return {
+        viewMode: 'grid',
+        sortBy: 'newest',
+        
+        applySorting() {
+            // Implement sorting logic
+            const url = new URL(window.location);
+            url.searchParams.set('sort', this.sortBy);
+            window.location.href = url.toString();
+        },
+        
+        duplicatePresentation(id) {
+            // Implement duplication logic
+            alert(`Duplicate presentation ${id} - Coming soon!`);
+        },
+        
+        deletePresentation(id) {
+            if (confirm('Are you sure you want to delete this presentation?')) {
+                // Implement deletion logic
+                alert(`Delete presentation ${id} - Coming soon!`);
+            }
+        },
+        
+        retryGeneration(id) {
+            // Implement retry logic
+            alert(`Retry generation for presentation ${id} - Coming soon!`);
+        }
+    }
+}
+</script>
+{% endblock %}

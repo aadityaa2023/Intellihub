@@ -1,0 +1,23 @@
+### Core framework
+Django==4.2.7
+
+### HTTP client
+requests>=2.31.0,<3
+
+### Env loader
+python-dotenv>=1.0.0,<2
+
+### AI/ML dependencies
+huggingface_hub>=0.20.0,<1.0.0
+google-genai>=0.5.0  # For Google Veo video generation
+
+### Testing
+pytest>=8.0.0,<9
+
+
+### Admin UI
+django-admin-interface>=0.26.0
+
+### Presentation Export (Optional)
+weasyprint>=59.0  # For PDF generation
+python-pptx>=0.6.21  # For PowerPoint generation

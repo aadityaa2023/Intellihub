@@ -1,0 +1,130 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Quick Audio - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <span class="flex items-center space-x-2">
+        <i class="fas fa-bolt text-intellihub-primary"></i>
+        <span>Quick Audio</span>
+    </span>
+{% endblock %}
+
+{% block content %}
+<div class="h-full overflow-y-auto custom-scrollbar">
+    <div class="max-w-2xl mx-auto p-6">
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-white mb-2">Quick Audio Generation</h1>
+            <p class="text-gray-400">Generate speech from text quickly with default settings</p>
+        </div>
+
+        <!-- Quick Form -->
+        <div class="bg-intellihub-surface border border-gray-700 rounded-xl p-8">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Text Input -->
+                <div class="space-y-2">
+                    <label for="{{ form.text.id_for_label }}" class="block text-lg font-medium text-gray-300">
+                        {{ form.text.label }}
+                    </label>
+                    {{ form.text }}
+                    {% if form.text.errors %}
+                        <div class="text-red-400 text-sm">{{ form.text.errors|first }}</div>
+                    {% endif %}
+                    <div class="text-sm text-gray-500">
+                        {{ form.text.help_text }}
+                    </div>
+                </div>
+
+                <!-- Voice Selection -->
+                <div class="space-y-2">
+                    <label for="{{ form.voice.id_for_label }}" class="block text-lg font-medium text-gray-300">
+                        {{ form.voice.label }}
+                    </label>
+                    {{ form.voice }}
+                    {% if form.voice.errors %}
+                        <div class="text-red-400 text-sm">{{ form.voice.errors|first }}</div>
+                    {% endif %}
+                    <div class="text-sm text-gray-500">
+                        {{ form.voice.help_text }}
+                    </div>
+                </div>
+
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="bg-red-900/20 border border-red-700 rounded-lg p-4">
+                        <div class="flex items-center space-x-2 text-red-400">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>{{ form.non_field_errors|first }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Submit Button -->
+                <div class="space-y-4">
+                    <button type="submit" 
+                            class="w-full py-4 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white rounded-lg transition-colors flex items-center justify-center space-x-2 text-lg font-medium">
+                        <i class="fas fa-play"></i>
+                        <span>Generate Audio</span>
+                    </button>
+                    
+                    <div class="flex justify-center">
+                        <a href="{% url 'audio_generation' %}" 
+                           class="text-intellihub-primary hover:text-white transition-colors">
+                            Need more options? Use Advanced Audio Generation →
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Features -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center p-4">
+                <div class="w-12 h-12 bg-intellihub-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-bolt text-intellihub-primary"></i>
+                </div>
+                <h3 class="text-white font-medium mb-2">Fast Generation</h3>
+                <p class="text-gray-400 text-sm">Quick audio generation with optimized settings</p>
+            </div>
+            
+            <div class="text-center p-4">
+                <div class="w-12 h-12 bg-intellihub-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-microphone text-intellihub-primary"></i>
+                </div>
+                <h3 class="text-white font-medium mb-2">Multiple Voices</h3>
+                <p class="text-gray-400 text-sm">Choose from various AI voices for different styles</p>
+            </div>
+            
+            <div class="text-center p-4">
+                <div class="w-12 h-12 bg-intellihub-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-download text-intellihub-primary"></i>
+                </div>
+                <h3 class="text-white font-medium mb-2">Download Ready</h3>
+                <p class="text-gray-400 text-sm">Audio files ready for download in common formats</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textArea = document.getElementById('{{ form.text.id_for_label }}');
+    
+    // Auto-focus on text area
+    textArea.focus();
+    
+    // Auto-resize text area
+    function autoResize() {
+        textArea.style.height = 'auto';
+        textArea.style.height = Math.min(textArea.scrollHeight, 200) + 'px';
+    }
+    
+    textArea.addEventListener('input', autoResize);
+    autoResize();
+});
+</script>
+{% endblock %}

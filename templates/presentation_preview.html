@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ presentation.title }} - Presentation Preview</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .slide-container {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .slide {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 1200px;
+            width: 100%;
+            height: 675px; /* 16:9 aspect ratio */
+            max-height: 80vh;
+            padding: 3rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .slide-title {
+            background: {{ presentation.color_scheme|default:"#667eea" }};
+        }
+        
+        .slide-content {
+            background: {{ presentation.color_scheme|default:"#667eea" }};
+        }
+        
+        .slide-bullets {
+            background: white;
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: #667eea;
+            transition: width 0.3s ease;
+            z-index: 100;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            backdrop-filter: blur(10px);
+            z-index: 50;
+        }
+        
+        .control-btn {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .slide-number {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            color: #999;
+            font-size: 0.875rem;
+        }
+        
+        .fade-enter {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .exit-btn {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        
+        .exit-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .controls, .exit-btn, .progress-bar {
+                display: none !important;
+            }
+            .slide {
+                page-break-after: always;
+                max-height: none;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body x-data="presentationPreview()" @keydown.window="handleKeyboard($event)">
+    
+    <!-- Progress Bar -->
+    <div class="progress-bar" :style="`width: ${(currentSlide / totalSlides) * 100}%`"></div>
+    
+    <!-- Exit Button -->
+    <button class="exit-btn" @click="exitPresentation()" title="Exit Presentation (Esc)">
+        <i class="fas fa-times text-xl"></i>
+    </button>
+    
+    <!-- Slide Container -->
+    <div class="slide-container">
+        <div class="slide fade-enter" :key="currentSlide">
+            
+            <!-- Title Slide (First Slide) -->
+            <template x-if="currentSlide === 1">
+                <div class="flex flex-col items-center justify-center h-full text-center slide-title text-white">
+                    <h1 class="text-6xl font-bold mb-6">{{ presentation.title }}</h1>
+                    {% if presentation.description %}
+                        <p class="text-2xl mb-8 opacity-90">{{ presentation.description }}</p>
+                    {% endif %}
+                    <div class="mt-auto">
+                        <p class="text-lg opacity-75">{{ request.user.username }}</p>
+                        <p class="text-sm opacity-60">{{ presentation.created_at|date:"F j, Y" }}</p>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- Content Slides -->
+            {% for slide in slides %}
+            <template x-if="currentSlide === {{ forloop.counter|add:1 }}">
+                <div class="flex flex-col h-full">
+                    <h2 class="text-4xl font-bold mb-6 text-gray-800 border-b-4 pb-4" 
+                        style="border-color: {{ presentation.color_scheme|default:'#667eea' }}">
+                        {{ slide.title }}
+                    </h2>
+                    
+                    <div class="flex-1 overflow-y-auto">
+                        {% if slide.slide_type == 'bullets' %}
+                            <!-- Bullet Points -->
+                            <ul class="space-y-4 text-lg">
+                                {% for element in slide.elements.all %}
+                                    {% if element.element_type == 'text' %}
+                                        <li class="flex items-start">
+                                            <i class="fas fa-circle text-xs mt-2 mr-4" 
+                                               style="color: {{ presentation.color_scheme|default:'#667eea' }}"></i>
+                                            <span class="text-gray-700">{{ element.content }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        
+                        {% elif slide.slide_type == 'content' %}
+                            <!-- Text Content -->
+                            <div class="prose prose-lg max-w-none">
+                                {% for element in slide.elements.all %}
+                                    {% if element.element_type == 'text' %}
+                                        <p class="text-gray-700 mb-4 leading-relaxed">{{ element.content }}</p>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        
+                        {% elif slide.slide_type == 'comparison' %}
+                            <!-- Two Column Comparison -->
+                            <div class="grid grid-cols-2 gap-8 h-full">
+                                <div class="border-r-2 pr-8" style="border-color: {{ presentation.color_scheme|default:'#667eea' }}">
+                                    <h3 class="text-2xl font-semibold mb-4 text-gray-800">Before</h3>
+                                    <ul class="space-y-3">
+                                        {% for element in slide.elements.all %}
+                                            {% if element.position_x < 50 and element.element_type == 'text' %}
+                                                <li class="text-gray-700">{{ element.content }}</li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="pl-8">
+                                    <h3 class="text-2xl font-semibold mb-4 text-gray-800">After</h3>
+                                    <ul class="space-y-3">
+                                        {% for element in slide.elements.all %}
+                                            {% if element.position_x >= 50 and element.element_type == 'text' %}
+                                                <li class="text-gray-700">{{ element.content }}</li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        
+                        {% else %}
+                            <!-- Default Content -->
+                            <div class="space-y-4">
+                                {% for element in slide.elements.all %}
+                                    <div class="text-gray-700 text-lg">{{ element.content }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Slide Notes (if any) -->
+                    {% if slide.notes %}
+                    <div class="mt-4 p-4 bg-gray-100 rounded-lg border-l-4" 
+                         style="border-color: {{ presentation.color_scheme|default:'#667eea' }}">
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-sticky-note mr-2"></i>
+                            <strong>Notes:</strong> {{ slide.notes }}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="slide-number">
+                        {{ forloop.counter }} / {{ slides.count }}
+                    </div>
+                </div>
+            </template>
+            {% endfor %}
+            
+            <!-- Thank You Slide (Last Slide) -->
+            <template x-if="currentSlide === totalSlides">
+                <div class="flex flex-col items-center justify-center h-full text-center slide-content text-white">
+                    <h1 class="text-6xl font-bold mb-8">Thank You!</h1>
+                    <p class="text-2xl mb-4">Questions?</p>
+                    <div class="mt-8">
+                        <p class="text-lg opacity-75">{{ request.user.username }}</p>
+                        <p class="text-sm opacity-60">{{ request.user.email }}</p>
+                    </div>
+                </div>
+            </template>
+            
+        </div>
+    </div>
+    
+    <!-- Controls -->
+    <div class="controls">
+        <button class="control-btn" @click="previousSlide()" :disabled="currentSlide === 1" title="Previous (←)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        
+        <div class="flex items-center px-4 text-white text-sm">
+            <span x-text="currentSlide"></span>
+            <span class="mx-1">/</span>
+            <span x-text="totalSlides"></span>
+        </div>
+        
+        <button class="control-btn" @click="nextSlide()" :disabled="currentSlide === totalSlides" title="Next (→)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        
+        <div class="w-px h-8 bg-gray-600 mx-2"></div>
+        
+        <button class="control-btn" @click="toggleFullscreen()" title="Fullscreen (F)">
+            <i class="fas fa-expand"></i>
+        </button>
+        
+        <button class="control-btn" @click="printPresentation()" title="Print (P)">
+            <i class="fas fa-print"></i>
+        </button>
+    </div>
+    
+    <script>
+        function presentationPreview() {
+            return {
+                currentSlide: 1,
+                totalSlides: {{ slides.count|add:2 }}, // Title + Content + Thank You
+                
+                init() {
+                    // Auto-focus for keyboard navigation
+                    document.body.focus();
+                },
+                
+                nextSlide() {
+                    if (this.currentSlide < this.totalSlides) {
+                        this.currentSlide++;
+                    }
+                },
+                
+                previousSlide() {
+                    if (this.currentSlide > 1) {
+                        this.currentSlide--;
+                    }
+                },
+                
+                handleKeyboard(event) {
+                    switch(event.key) {
+                        case 'ArrowRight':
+                        case ' ':
+                        case 'Enter':
+                            event.preventDefault();
+                            this.nextSlide();
+                            break;
+                        case 'ArrowLeft':
+                            event.preventDefault();
+                            this.previousSlide();
+                            break;
+                        case 'Home':
+                            event.preventDefault();
+                            this.currentSlide = 1;
+                            break;
+                        case 'End':
+                            event.preventDefault();
+                            this.currentSlide = this.totalSlides;
+                            break;
+                        case 'Escape':
+                            event.preventDefault();
+                            this.exitPresentation();
+                            break;
+                        case 'f':
+                        case 'F':
+                            event.preventDefault();
+                            this.toggleFullscreen();
+                            break;
+                        case 'p':
+                        case 'P':
+                            event.preventDefault();
+                            this.printPresentation();
+                            break;
+                    }
+                },
+                
+                toggleFullscreen() {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        }
+                    }
+                },
+                
+                printPresentation() {
+                    window.print();
+                },
+                
+                exitPresentation() {
+                    window.location.href = "{% url 'presentation_result' presentation.id %}";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

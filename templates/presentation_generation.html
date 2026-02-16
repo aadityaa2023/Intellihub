@@ -1,0 +1,337 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Generate Presentation - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-presentation mr-2 text-intellihub-primary"></i>
+    AI Presentation Generator
+{% endblock %}
+
+{% block content %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<div class="container mx-auto px-4 py-8" x-data="presentationGenerator()">
+    <!-- Page Header -->
+    <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-white mb-4">🎯 Create AI-Powered Presentations</h2>
+        <p class="text-lg text-gray-400 max-w-3xl mx-auto">
+            Generate professional presentations instantly using AI. From business pitches to educational content, 
+            create engaging slide decks in minutes with intelligent design and compelling content.
+        </p>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Generation Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 p-6">
+                <form method="post" x-ref="presentationForm">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="space-y-6 mb-8">
+                        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                            <i class="fas fa-edit mr-2 text-intellihub-primary"></i>
+                            Basic Information
+                        </h3>
+                        
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <!-- Title -->
+                            <div class="md:col-span-2">
+                                <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.title.label }}
+                                </label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.title.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Topic -->
+                            <div class="md:col-span-2">
+                                <label for="{{ form.topic.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.topic.label }}
+                                </label>
+                                {{ form.topic }}
+                                {% if form.topic.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.topic.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Target Audience -->
+                            <div>
+                                <label for="{{ form.target_audience.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.target_audience.label }}
+                                </label>
+                                {{ form.target_audience }}
+                                {% if form.target_audience.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.target_audience.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Presentation Type -->
+                            <div>
+                                <label for="{{ form.presentation_type.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.presentation_type.label }}
+                                </label>
+                                {{ form.presentation_type }}
+                                {% if form.presentation_type.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.presentation_type.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Presentation Settings -->
+                    <div class="space-y-6 mb-8">
+                        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                            <i class="fas fa-cogs mr-2 text-intellihub-primary"></i>
+                            Presentation Settings
+                        </h3>
+                        
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <!-- Slide Count -->
+                            <div>
+                                <label for="{{ form.slide_count.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.slide_count.label }}
+                                </label>
+                                {{ form.slide_count }}
+                                {% if form.slide_count.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.slide_count.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Theme -->
+                            <div>
+                                <label for="{{ form.theme.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.theme.label }}
+                                </label>
+                                {{ form.theme }}
+                                {% if form.theme.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.theme.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Color Scheme -->
+                            <div>
+                                <label for="{{ form.color_scheme.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.color_scheme.label }}
+                                </label>
+                                {{ form.color_scheme }}
+                                {% if form.color_scheme.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.color_scheme.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Tone -->
+                            <div class="md:col-span-3">
+                                <label for="{{ form.tone.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.tone.label }}
+                                </label>
+                                {{ form.tone }}
+                                {% if form.tone.errors %}
+                                    <div class="text-red-400 text-sm mt-1">{{ form.tone.errors|first }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content Options -->
+                    <div class="space-y-6 mb-8">
+                        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                            <i class="fas fa-palette mr-2 text-intellihub-primary"></i>
+                            Content Options
+                        </h3>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Include Images -->
+                            <div class="flex items-center space-x-3">
+                                {{ form.include_images }}
+                                <label for="{{ form.include_images.id_for_label }}" class="text-sm font-medium text-gray-300">
+                                    {{ form.include_images.label }}
+                                </label>
+                            </div>
+                            
+                            <!-- Include Charts -->
+                            <div class="flex items-center space-x-3">
+                                {{ form.include_charts }}
+                                <label for="{{ form.include_charts.id_for_label }}" class="text-sm font-medium text-gray-300">
+                                    {{ form.include_charts.label }}
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div>
+                            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
+                                {{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-red-400 text-sm mt-1">{{ form.description.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                        <div class="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-6">
+                            {% for error in form.non_field_errors %}
+                                <p class="text-red-300">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Generate Button -->
+                    <div class="flex justify-center">
+                        <button type="submit" 
+                                class="bg-gradient-to-r from-intellihub-primary to-intellihub-secondary text-white font-semibold py-4 px-8 rounded-lg hover:from-intellihub-primary-dark hover:to-intellihub-primary transition-all duration-300 transform hover:scale-105 shadow-lg"
+                                x-bind:disabled="isGenerating"
+                                x-bind:class="isGenerating ? 'opacity-50 cursor-not-allowed' : ''">
+                            <template x-if="!isGenerating">
+                                <span class="flex items-center">
+                                    <i class="fas fa-magic mr-2"></i>
+                                    Generate Presentation
+                                </span>
+                            </template>
+                            <template x-if="isGenerating">
+                                <span class="flex items-center">
+                                    <i class="fas fa-spinner animate-spin mr-2"></i>
+                                    Generating...
+                                </span>
+                            </template>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-bolt mr-2 text-intellihub-primary"></i>
+                    Quick Actions
+                </h3>
+                
+                <div class="space-y-3">
+                    <a href="{% url 'quick_presentation' %}" 
+                       class="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center">
+                        <i class="fas fa-zap mr-2 text-yellow-400"></i>
+                        Quick Generate
+                    </a>
+                    
+                    <a href="{% url 'presentation_gallery' %}" 
+                       class="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center">
+                        <i class="fas fa-images mr-2 text-blue-400"></i>
+                        My Presentations
+                    </a>
+                </div>
+            </div>
+
+            <!-- Available Themes Preview -->
+            {% if themes %}
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-paint-brush mr-2 text-intellihub-primary"></i>
+                    Available Themes
+                </h3>
+                
+                <div class="space-y-2">
+                    {% for theme in themes %}
+                    <div class="bg-gray-700/50 rounded-lg p-3">
+                        <div class="font-medium text-white text-sm">{{ theme.name }}</div>
+                        <div class="text-gray-400 text-xs">{{ theme.description }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent Presentations -->
+            {% if recent_requests %}
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur rounded-xl border border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-history mr-2 text-intellihub-primary"></i>
+                    Recent Presentations
+                </h3>
+                
+                <div class="space-y-3">
+                    {% for request in recent_requests|slice:":5" %}
+                    <div class="bg-gray-700/30 rounded-lg p-3 hover:bg-gray-700/50 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-white text-sm truncate">{{ request.title }}</div>
+                                <div class="text-gray-400 text-xs">{{ request.created_at|timesince }} ago</div>
+                                <div class="flex items-center mt-1">
+                                    <span class="inline-flex items-center text-xs px-2 py-1 rounded-full 
+                                        {% if request.status == 'completed' %}bg-green-900/30 text-green-400{% elif request.status == 'failed' %}bg-red-900/30 text-red-400{% elif request.status == 'processing' %}bg-yellow-900/30 text-yellow-400{% else %}bg-gray-700 text-gray-400{% endif %}">
+                                        {{ request.get_status_display }}
+                                    </span>
+                                    {% if request.slide_count_actual %}
+                                        <span class="ml-2 text-xs text-gray-500">{{ request.slide_count_actual }} slides</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if request.status == 'completed' %}
+                            <a href="{% url 'presentation_result' request.id %}" 
+                               class="inline-flex items-center text-intellihub-primary hover:text-intellihub-secondary text-xs mt-2">
+                                View Result
+                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Tips -->
+            <div class="bg-gradient-to-br from-intellihub-primary/10 to-intellihub-secondary/10 backdrop-blur rounded-xl border border-intellihub-primary/20 p-6">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>
+                    Pro Tips
+                </h3>
+                
+                <ul class="text-sm text-gray-300 space-y-2">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                        Be specific about your topic and objectives
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                        Include target audience for better content
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                        Choose appropriate tone for your context
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-green-400 mr-2 mt-1 text-xs"></i>
+                        Enable images and charts for visual appeal
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function presentationGenerator() {
+    return {
+        isGenerating: false,
+        
+        init() {
+            this.$refs.presentationForm.addEventListener('submit', () => {
+                this.isGenerating = true;
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Image Generation - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-image mr-2 text-intellihub-primary"></i>
+    Image Generation
+{% endblock %}
+
+{% block content %}
+    <!-- Main Content Area -->
+
+    <div class="max-w-6xl mx-auto p-6" x-data="imageGenerator()">
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-1 mb-6 bg-intellihub-surface rounded-lg p-1">
+            <button @click="activeTab = 'generate'" 
+                    :class="activeTab === 'generate' ? 'bg-intellihub-primary text-white' : 'text-gray-400 hover:text-gray-200'"
+                    class="flex-1 py-2 px-4 rounded-md transition-all duration-200 font-medium">
+                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                Generate
+            </button>
+            <button @click="activeTab = 'recent'" 
+                    :class="activeTab === 'recent' ? 'bg-intellihub-primary text-white' : 'text-gray-400 hover:text-gray-200'"
+                    class="flex-1 py-2 px-4 rounded-md transition-all duration-200 font-medium">
+                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Recent
+            </button>
+        </div>
+
+        <!-- Generate Tab -->
+        <div x-show="activeTab === 'generate'" class="animate-fade-in">
+            {% if form.errors %}
+                <div class="bg-red-600 text-white p-4 rounded-lg mb-6">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Main Prompt Section -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-intellihub-surface rounded-lg p-6">
+                            <h2 class="text-xl font-semibold text-gray-100 mb-4">Describe Your Image</h2>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    {{ form.prompt.label_tag }}
+                                    {{ form.prompt }}
+                                    {% if form.prompt.help_text %}
+                                        <p class="text-sm text-gray-500 mt-1">{{ form.prompt.help_text }}</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    {{ form.negative_prompt.label_tag }}
+                                    {{ form.negative_prompt }}
+                                    {% if form.negative_prompt.help_text %}
+                                        <p class="text-sm text-gray-500 mt-1">{{ form.negative_prompt.help_text }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Style and Size Settings -->
+                        <div class="bg-intellihub-surface rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-100 mb-4">Style & Format</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    {{ form.style_preset.label_tag }}
+                                    {{ form.style_preset }}
+                                </div>
+                                
+                                <div>
+                                    {{ form.size.label_tag }}
+                                    {{ form.size }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="space-y-6">
+                        <div class="bg-intellihub-surface rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-100 mb-4">Advanced Settings</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    {{ form.steps.label_tag }}
+                                    {{ form.steps }}
+                                    {% if form.steps.help_text %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ form.steps.help_text }}</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    {{ form.cfg_scale.label_tag }}
+                                    {{ form.cfg_scale }}
+                                    {% if form.cfg_scale.help_text %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ form.cfg_scale.help_text }}</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    {{ form.samples.label_tag }}
+                                    {{ form.samples }}
+                                    {% if form.samples.help_text %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ form.samples.help_text }}</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <div>
+                                    {{ form.seed.label_tag }}
+                                    {{ form.seed }}
+                                    {% if form.seed.help_text %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ form.seed.help_text }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Generate Button -->
+                        <button type="submit" 
+                                class="w-full bg-gradient-to-r from-intellihub-primary to-intellihub-secondary text-white font-semibold py-3 px-6 rounded-lg hover:from-intellihub-primary-dark hover:to-intellihub-primary transition-all duration-300 transform hover:scale-105 shadow-lg">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            Generate Image
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Recent Tab -->
+        <div x-show="activeTab === 'recent'" class="animate-fade-in">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-100 mb-2">Recent Generations</h2>
+                <p class="text-gray-500">Your recent image generation requests</p>
+            </div>
+
+            {% if recent_requests %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for request in recent_requests %}
+                        <div class="bg-intellihub-surface rounded-lg p-4 hover:bg-intellihub-surface-light transition-colors">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm font-medium {% if request.status == 'completed' %}text-green-400{% elif request.status == 'failed' %}text-red-400{% elif request.status == 'processing' %}text-yellow-400{% else %}text-gray-400{% endif %}">
+                                    {{ request.get_status_display }}
+                                </span>
+                                <span class="text-xs text-gray-500">{{ request.created_at|timesince }} ago</span>
+                            </div>
+                            
+                            <p class="text-gray-300 text-sm mb-3 line-clamp-2">{{ request.prompt|truncatechars:80 }}</p>
+                            
+                            {% if request.images.count > 0 %}
+                                <div class="flex space-x-2 mb-3">
+                                    {% for image in request.images.all|slice:":3" %}
+                                        <div class="w-16 h-16 bg-gray-700 rounded overflow-hidden">
+                                            <img src="{{ image.image_url }}" alt="Generated" class="w-full h-full object-cover">
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if request.status == 'completed' %}
+                                <a href="{% url 'image_result' request.id %}" 
+                                   class="inline-flex items-center text-intellihub-primary hover:text-intellihub-secondary text-sm">
+                                    View Results
+                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-400 mb-2">No images generated yet</h3>
+                    <p class="text-gray-600">Generate your first image to get started!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        function imageGenerator() {
+            return {
+                activeTab: 'generate',
+                
+                init() {
+                    // Any initialization code
+                }
+            }
+        }
+    </script>
+{% endblock %}

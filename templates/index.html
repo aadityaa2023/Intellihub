@@ -1,0 +1,468 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}IntelliHub - AI Chat{% endblock %}
+
+{% block page_title %}
+    <span id="conversation-title">New Chat</span>
+{% endblock %}
+
+{% block conversations %}
+<!-- Conversations will be loaded dynamically -->
+<div x-data="conversationsManager()" x-init="loadConversations()">
+    <template x-if="conversations.length === 0">
+        <div class="text-gray-500 text-sm text-center py-8">
+            <i class="fas fa-comments mb-2 text-2xl"></i>
+            <p>No conversations yet</p>
+            <p class="text-xs mt-1">Start a new chat to begin!</p>
+        </div>
+    </template>
+    
+    <template x-for="conversation in conversations" :key="conversation.id">
+        <div class="group relative">
+            <a :href="'/chat/' + conversation.id + '/'" 
+               :class="conversation.id === currentConversationId ? 'bg-intellihub-primary' : 'hover:bg-intellihub-surface-light'"
+               class="flex items-center justify-between w-full p-3 rounded-xl transition-all duration-200 text-sm"
+            >
+                <div class="flex items-center space-x-3 flex-1 min-w-0">
+                    <i class="fas fa-message text-gray-400 flex-shrink-0"></i>
+                    <span class="truncate text-gray-200" x-text="conversation.title"></span>
+                </div>
+                <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button @click.stop.prevent="editConversationTitle(conversation)" 
+                            class="p-1 rounded hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-edit text-xs text-gray-400"></i>
+                    </button>
+                    <button @click.stop.prevent="deleteConversation(conversation.id)" 
+                            class="p-1 rounded hover:bg-red-600 transition-colors">
+                        <i class="fas fa-trash text-xs text-gray-400"></i>
+                    </button>
+                </div>
+            </a>
+        </div>
+    </template>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-full" x-data="chatInterface()" x-init="initChat()">
+    <!-- Messages Area -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar" id="messages-container">
+        <div class="max-w-4xl mx-auto px-4 py-6">
+            <!-- Welcome Screen -->
+            <template x-if="messages.length === 0 && !isLoading">
+                <div class="text-center py-16 animate-fade-in">
+                    <div class="mb-6">
+                        <div class="w-20 h-20 bg-gradient-to-br from-intellihub-primary to-intellihub-secondary rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
+                            <i class="fas fa-brain text-white text-2xl"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-100 mb-4">Welcome to IntelliHub</h2>
+                    <p class="text-gray-400 max-w-md mx-auto mb-8 leading-relaxed">Your intelligent AI assistant that automatically selects the best model for each task. Ask me anything!</p>
+                    
+                    <!-- Quick Actions -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mt-8">
+                        <button @click="quickPrompt('Help me write a professional email')" class="group p-4 bg-intellihub-surface border border-gray-700 rounded-xl hover:border-intellihub-primary transition-all duration-200 hover:scale-105">
+                            <i class="fas fa-envelope text-intellihub-primary mb-2 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-sm text-gray-300 font-medium">Write Email</p>
+                            <p class="text-xs text-gray-500 mt-1">Professional email composition</p>
+                        </button>
+                        <button @click="quickPrompt('Explain a complex topic in simple terms')" class="group p-4 bg-intellihub-surface border border-gray-700 rounded-xl hover:border-intellihub-primary transition-all duration-200 hover:scale-105">
+                            <i class="fas fa-lightbulb text-intellihub-primary mb-2 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-sm text-gray-300 font-medium">Explain</p>
+                            <p class="text-xs text-gray-500 mt-1">Break down complex concepts</p>
+                        </button>
+                        <button @click="quickPrompt('Help me brainstorm creative ideas')" class="group p-4 bg-intellihub-surface border border-gray-700 rounded-xl hover:border-intellihub-primary transition-all duration-200 hover:scale-105">
+                            <i class="fas fa-rocket text-intellihub-primary mb-2 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-sm text-gray-300 font-medium">Brainstorm</p>
+                            <p class="text-xs text-gray-500 mt-1">Creative idea generation</p>
+                        </button>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- Chat Messages -->
+            <div class="space-y-6" id="messages-list">
+                <template x-for="(message, index) in messages" :key="message.id">
+                    <div :class="message.role === 'user' ? 'flex justify-end' : 'flex justify-start'" 
+                         class="animate-slide-up">
+                        
+                        <!-- User Message -->
+                        <template x-if="message.role === 'user'">
+                            <div class="flex items-start space-x-3 max-w-3xl">
+                                <div class="bg-intellihub-primary text-white px-4 py-3 rounded-2xl rounded-tr-lg shadow-lg order-2">
+                                    <div class="whitespace-pre-wrap" x-text="message.content"></div>
+                                    <template x-if="message.image_url">
+                                        <img :src="message.image_url" class="mt-3 max-w-sm rounded-lg" alt="User uploaded image">
+                                    </template>
+                                </div>
+                                <div class="w-8 h-8 bg-intellihub-primary rounded-full flex items-center justify-center text-white font-bold text-sm order-3">
+                                    {{ user.username.0|upper }}
+                                </div>
+                            </div>
+                        </template>
+                        
+                        <!-- Assistant Message -->
+                        <template x-if="message.role === 'assistant'">
+                            <div class="flex items-start space-x-3 max-w-3xl">
+                                <div class="w-8 h-8 bg-gradient-to-br from-intellihub-primary to-intellihub-secondary rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    <i class="fas fa-brain text-xs"></i>
+                                </div>
+                                <div class="bg-intellihub-surface text-gray-200 px-4 py-3 rounded-2xl rounded-tl-lg border border-gray-700 shadow-lg">
+                                    <div class="prose prose-invert prose-sm max-w-none whitespace-pre-wrap leading-relaxed" x-html="formatMessage(message.content)"></div>
+                                    <template x-if="message.model_used">
+                                        <div class="text-xs text-gray-500 mt-2 border-t border-gray-700 pt-2">
+                                            <i class="fas fa-microchip mr-1"></i>
+                                            <span x-text="message.model_used"></span>
+                                            <template x-if="message.task_type">
+                                                <span> • <span x-text="message.task_type"></span></span>
+                                            </template>
+                                            <template x-if="message.response_time">
+                                                <span> • <span x-text="message.response_time.toFixed(2)"></span>s</span>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+            
+            <!-- Typing Indicator -->
+            <template x-if="isLoading">
+                <div class="flex justify-start animate-slide-up">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-intellihub-primary to-intellihub-secondary rounded-full flex items-center justify-center text-white font-bold text-sm animate-pulse">
+                            <i class="fas fa-brain text-xs"></i>
+                        </div>
+                        <div class="bg-intellihub-surface px-4 py-3 rounded-2xl rounded-tl-lg border border-gray-700">
+                            <div class="flex items-center space-x-2">
+                                <div class="flex space-x-1">
+                                    <div class="w-2 h-2 bg-intellihub-primary rounded-full animate-bounce"></div>
+                                    <div class="w-2 h-2 bg-intellihub-primary rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                                    <div class="w-2 h-2 bg-intellihub-primary rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                                </div>
+                                <span class="text-gray-400 text-sm">AI is thinking...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+    
+    <!-- Input Area -->
+    <div class="border-t border-gray-800 bg-intellihub-surface">
+        <div class="max-w-4xl mx-auto p-4">
+            <form @submit.prevent="sendMessage()" class="space-y-3">
+                {% csrf_token %}
+                <!-- Main Input -->
+                <div class="flex items-end space-x-3">
+                    <div class="flex-1">
+                        <textarea 
+                            x-model="currentMessage"
+                            @keydown.enter.prevent="if (!$event.shiftKey) sendMessage()"
+                            @input="autoResize($event.target)"
+                            placeholder="Message IntelliHub..."
+                            rows="1"
+                            class="w-full min-h-[48px] max-h-32 px-4 py-3 pr-12 border border-gray-700 rounded-xl bg-intellihub-surface-light text-gray-200 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-intellihub-primary focus:border-transparent transition-all duration-200"
+                            :disabled="isLoading"
+                        ></textarea>
+                        
+                        <!-- Image URL Input -->
+                        <div class="mt-2">
+                            <input 
+                                x-model="imageUrl"
+                                type="url" 
+                                placeholder="🖼️ Optional image URL"
+                                class="w-full px-3 py-2 bg-intellihub-surface-light border border-gray-700 rounded-lg text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-intellihub-primary/50 transition-all duration-200 text-sm"
+                                :disabled="isLoading"
+                            >
+                        </div>
+                    </div>
+                    
+                    <button 
+                        type="submit"
+                        :disabled="!currentMessage.trim() || isLoading"
+                        :class="currentMessage.trim() && !isLoading ? 'bg-intellihub-primary hover:bg-intellihub-primary-dark hover:scale-105' : 'bg-gray-700 cursor-not-allowed'"
+                        class="p-3 rounded-xl text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-intellihub-primary/50 flex items-center justify-center"
+                    >
+                        <template x-if="!isLoading">
+                            <i class="fas fa-paper-plane text-sm"></i>
+                        </template>
+                        <template x-if="isLoading">
+                            <i class="fas fa-spinner fa-spin text-sm"></i>
+                        </template>
+                    </button>
+                </div>
+                
+                <!-- Input Info -->
+                <div class="text-xs text-gray-500 px-1">
+                    Press Enter to send, Shift + Enter for new line
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function conversationsManager() {
+    return {
+        conversations: [],
+        currentConversationId: new URLSearchParams(window.location.search).get('conversation') || null,
+        
+        async loadConversations() {
+            try {
+                const response = await fetch('/api/conversations/', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const ct = response.headers.get('Content-Type') || '';
+                this.conversations = ct.includes('application/json') ? await response.json() : [];
+            } catch (error) {
+                console.error('Failed to load conversations:', error);
+            }
+        },
+        
+        async deleteConversation(id) {
+            if (confirm('Are you sure you want to delete this conversation?')) {
+                try {
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                    const headers = {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    
+                    if (csrfToken) {
+                        headers['X-CSRFToken'] = csrfToken.value;
+                    }
+                    
+                    const response = await fetch(`/api/conversations/${id}/`, {
+                        method: 'DELETE',
+                        headers: headers
+                    });
+                    
+                    if (response.ok) {
+                        this.conversations = this.conversations.filter(c => c.id !== id);
+                        if (this.currentConversationId === id) {
+                            window.location.href = '/';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to delete conversation:', error);
+                }
+            }
+        }
+    }
+}
+
+function chatInterface() {
+    return {
+        messages: [],
+        currentMessage: '',
+        imageUrl: '',
+        isLoading: false,
+        conversationId: null,
+        
+        initChat() {
+            // Load conversation from URL if exists
+            const pathParts = window.location.pathname.split('/');
+            if (pathParts[1] === 'chat' && pathParts[2]) {
+                this.conversationId = pathParts[2];
+                this.loadConversation();
+            }
+            
+            // Auto-focus input
+            this.$nextTick(() => {
+                document.querySelector('textarea').focus();
+            });
+        },
+        
+        async loadConversation() {
+            try {
+                const response = await fetch(`/api/conversations/${this.conversationId}/messages/`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+                if (response.ok) {
+                    const ct = response.headers.get('Content-Type') || '';
+                    this.messages = ct.includes('application/json') ? await response.json() : [];
+                    this.scrollToBottom();
+                }
+            } catch (error) {
+                console.error('Failed to load conversation:', error);
+            }
+        },
+        
+        async sendMessage() {
+            if (!this.currentMessage.trim() || this.isLoading) return;
+            
+            console.log('Sending message:', this.currentMessage); // Debug log
+            
+            const userMessage = {
+                id: Date.now(),
+                role: 'user',
+                content: this.currentMessage.trim(),
+                image_url: this.imageUrl || null,
+                created_at: new Date().toISOString()
+            };
+            
+            this.messages.push(userMessage);
+            const messageText = this.currentMessage;
+            const imageUrl = this.imageUrl;
+            this.currentMessage = '';
+            this.imageUrl = '';
+            this.isLoading = true;
+            
+            this.$nextTick(() => {
+                this.scrollToBottom();
+                this.autoResize(document.querySelector('textarea'));
+            });
+            
+            try {
+                // Use simple form submission
+                const formData = new FormData();
+                formData.append('prompt', messageText);
+                if (imageUrl) {
+                    formData.append('image_url', imageUrl);
+                }
+                
+                // Get CSRF token from the meta tag or form
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                                document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
+                if (csrfToken) {
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+                }
+                
+                console.log('Sending to URL:', this.conversationId ? `/chat/${this.conversationId}/` : '/'); // Debug log
+                
+                const url = this.conversationId ? `/chat/${this.conversationId}/` : '/';
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin', // Include cookies
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                console.log('Response status:', response.status); // Debug log
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error:', errorText);
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                const contentType = response.headers.get('Content-Type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Unexpected response format. Expected JSON but received: ${contentType}. First chars: ${text.slice(0, 120)}`);
+                }
+                const data = await response.json();
+                console.log('Response data:', data); // Debug log
+                
+                if (data.conversation_id && !this.conversationId) {
+                    this.conversationId = data.conversation_id;
+                    // Update URL without reload
+                    window.history.pushState({}, '', `/chat/${this.conversationId}/`);
+                    // Update page title
+                    const titleEl = document.getElementById('conversation-title');
+                    if (titleEl && data.conversation_title) {
+                        titleEl.textContent = data.conversation_title;
+                    }
+                }
+                
+                const assistantMessage = {
+                    id: Date.now() + 1,
+                    role: 'assistant',
+                    content: data.assistant_text,
+                    model_used: data.model,
+                    task_type: data.task_type,
+                    response_time: data.response_time,
+                    created_at: new Date().toISOString()
+                };
+                
+                this.messages.push(assistantMessage);
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                const errorMessage = {
+                    id: Date.now() + 1,
+                    role: 'assistant',
+                    content: 'Sorry, I encountered an error. Please try again. Error: ' + error.message,
+                    created_at: new Date().toISOString()
+                };
+                this.messages.push(errorMessage);
+            } finally {
+                this.isLoading = false;
+                this.$nextTick(() => this.scrollToBottom());
+            }
+        },
+        
+        quickPrompt(prompt) {
+            this.currentMessage = prompt;
+            this.$nextTick(() => {
+                document.querySelector('textarea').focus();
+                this.autoResize(document.querySelector('textarea'));
+            });
+        },
+        
+        formatMessage(content) {
+            // Basic markdown-like formatting
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code class="bg-gray-800 px-1 py-0.5 rounded text-sm">$1</code>')
+                .replace(/\n/g, '<br>');
+        },
+        
+        autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px';
+        },
+        
+        scrollToBottom() {
+            this.$nextTick(() => {
+                const container = document.getElementById('messages-container');
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+    }
+}
+
+// Utility function to get CSRF token
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+
+// Set up CSRF token for all AJAX requests
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = getCSRFToken();
+    if (csrfToken) {
+        // Set default headers for fetch requests
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
+                options.headers = options.headers || {};
+                if (!options.headers['X-CSRFToken'] && !options.body instanceof FormData) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                }
+            }
+            return originalFetch(url, options);
+        };
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+.env/
+.venv/
+venv/
+ENV/
+
+# Environment variable files (keep example template committed)
+.env
+!.env.example
+
+# Django
+*.log
+staticfiles/
+media/
+
+# SQLite database
+/db.sqlite3
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# Bytecode cache
+*.pyc
+
+# Coverage / test
+htmlcov/
+.coverage*
+.pytest_cache/
+
+# Misc
+.DS_Store
+Thumbs.db
+tests/

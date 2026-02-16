@@ -1,0 +1,257 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Video Generation - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-video mr-2 text-intellihub-primary"></i>
+    Video Generation
+{% endblock %}
+
+{% block content %}
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Page Header -->
+            <div class="text-center mb-8 animate-fade-in">
+                <h2 class="text-4xl font-bold text-white mb-4">
+                    🎬 AI Video Generation
+                </h2>
+                <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+                    Create stunning videos from text descriptions using advanced AI models.
+                    Describe your vision and watch it come to life.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Generation Form -->
+                <div class="bg-intellihub-surface rounded-2xl p-6 border border-gray-800 animate-slide-up">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <span class="bg-intellihub-primary w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">1</span>
+                        Video Settings
+                    </h3>
+
+                    <form method="post" class="space-y-6" x-data="{ 
+                        showAdvanced: false,
+                        isGenerating: false,
+                        progress: 0
+                    }">
+                        {% csrf_token %}
+                        
+                        <!-- Form Errors -->
+                        {% if form.non_field_errors %}
+                            <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                                {% for error in form.non_field_errors %}
+                                    <p class="text-red-400 text-sm">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Basic Settings -->
+                        <div class="space-y-4">
+                            <!-- Prompt -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.prompt.label }}
+                                </label>
+                                {{ form.prompt }}
+                                {% if form.prompt.help_text %}
+                                    <p class="text-xs text-gray-500 mt-1">{{ form.prompt.help_text }}</p>
+                                {% endif %}
+                                {% if form.prompt.errors %}
+                                    {% for error in form.prompt.errors %}
+                                        <p class="text-red-400 text-xs mt-1">{{ error }}</p>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Model Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.model.label }}
+                                </label>
+                                {{ form.model }}
+                                {% if form.model.help_text %}
+                                    <p class="text-xs text-gray-500 mt-1">{{ form.model.help_text }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings Toggle -->
+                        <div class="border-t border-gray-700 pt-4">
+                            <button 
+                                type="button" 
+                                @click="showAdvanced = !showAdvanced"
+                                class="flex items-center justify-between w-full text-left text-sm font-medium text-intellihub-primary hover:text-intellihub-secondary transition-colors"
+                            >
+                                <span>Advanced Settings</span>
+                                <svg 
+                                    class="w-4 h-4 transform transition-transform" 
+                                    :class="showAdvanced ? 'rotate-180' : ''"
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Advanced Settings Panel -->
+                        <div x-show="showAdvanced" x-transition class="space-y-4">
+                            <!-- Video Size -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    {{ form.size.label }}
+                                </label>
+                                {{ form.size }}
+                                {% if form.size.help_text %}
+                                    <p class="text-xs text-gray-500 mt-1">{{ form.size.help_text }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Duration and FPS -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        {{ form.duration.label }}
+                                    </label>
+                                    {{ form.duration }}
+                                    {% if form.duration.help_text %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ form.duration.help_text }}</p>
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        {{ form.fps.label }}
+                                    </label>
+                                    {{ form.fps }}
+                                    {% if form.fps.help_text %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ form.fps.help_text }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-4">
+                            <button 
+                                type="submit" 
+                                :disabled="isGenerating"
+                                @click="isGenerating = true"
+                                class="w-full bg-gradient-to-r from-intellihub-primary to-intellihub-secondary hover:from-intellihub-primary-dark hover:to-intellihub-primary disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                <span x-show="!isGenerating" class="flex items-center justify-center">
+                                    🎬 Generate Video
+                                </span>
+                                <span x-show="isGenerating" class="flex items-center justify-center">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Generating Video... (Up to 90 seconds)
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Recent Videos -->
+                <div class="bg-intellihub-surface rounded-2xl p-6 border border-gray-800 animate-slide-up" style="animation-delay: 0.1s;">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <span class="bg-intellihub-secondary w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">2</span>
+                        Recent Videos
+                    </h3>
+
+                    {% if recent_requests %}
+                        <div class="space-y-4 max-h-96 overflow-y-auto">
+                            {% for request in recent_requests %}
+                                <div class="bg-intellihub-surface-light rounded-lg p-4 border border-gray-700 hover:border-intellihub-primary/30 transition-colors">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center space-x-2">
+                                            {% if request.status == 'completed' %}
+                                                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                                <span class="text-green-400 text-xs font-medium">Completed</span>
+                                            {% elif request.status == 'processing' %}
+                                                <span class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                                                <span class="text-yellow-400 text-xs font-medium">Processing</span>
+                                            {% elif request.status == 'failed' %}
+                                                <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                                <span class="text-red-400 text-xs font-medium">Failed</span>
+                                            {% else %}
+                                                <span class="w-2 h-2 bg-gray-500 rounded-full"></span>
+                                                <span class="text-gray-400 text-xs font-medium">Pending</span>
+                                            {% endif %}
+                                        </div>
+                                        <span class="text-xs text-gray-500">
+                                            {{ request.created_at|date:"M j, H:i" }}
+                                        </span>
+                                    </div>
+                                    
+                                    <p class="text-sm text-gray-300 mb-2 line-clamp-2">
+                                        {{ request.prompt|truncatechars:80 }}
+                                    </p>
+                                    
+                                    <div class="flex items-center justify-between text-xs text-gray-500">
+                                        <span>{{ request.model|default:"Default Model" }}</span>
+                                        {% if request.status == 'completed' %}
+                                            <a href="{% url 'video_result' request.id %}" 
+                                               class="text-intellihub-primary hover:text-intellihub-secondary transition-colors">
+                                                View →
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            <a href="{% url 'video_gallery' %}" 
+                               class="inline-flex items-center text-sm text-intellihub-primary hover:text-intellihub-secondary transition-colors">
+                                View All Videos 
+                                <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <div class="text-6xl mb-4">🎬</div>
+                            <p class="text-gray-400 mb-4">No videos generated yet</p>
+                            <p class="text-sm text-gray-500">
+                                Create your first video by describing what you want to see above!
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tips Section -->
+            <div class="mt-8 bg-gradient-to-r from-intellihub-primary/10 to-intellihub-secondary/10 rounded-2xl p-6 border border-intellihub-primary/20">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                    💡 Video Generation Tips
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4 text-sm text-gray-300">
+                    <div>
+                        <h4 class="font-medium text-intellihub-primary mb-2">Writing Great Prompts:</h4>
+                        <ul class="space-y-1 text-gray-400">
+                            <li>• Be specific about actions and movements</li>
+                            <li>• Include camera angles and shots</li>
+                            <li>• Describe the setting and lighting</li>
+                            <li>• Mention the style or genre</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-intellihub-primary mb-2">Technical Notes:</h4>
+                        <ul class="space-y-1 text-gray-400">
+                            <li>• Longer videos take more time to generate</li>
+                            <li>• Higher FPS results in smoother motion</li>
+                            <li>• Default settings work well for most cases</li>
+                            <li>• Generation time varies by complexity</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

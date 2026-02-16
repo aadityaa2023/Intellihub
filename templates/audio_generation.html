@@ -1,0 +1,216 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Audio Generation - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <span class="flex items-center space-x-2">
+        <i class="fas fa-microphone text-intellihub-primary"></i>
+        <span>Generate Audio</span>
+    </span>
+{% endblock %}
+
+{% block content %}
+<div class="h-full overflow-y-auto custom-scrollbar">
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Audio Generation</h1>
+            <p class="text-gray-400">Convert text to speech using AI-powered text-to-speech models</p>
+        </div>
+
+        <!-- Generation Form -->
+        <div class="bg-intellihub-surface border border-gray-700 rounded-xl p-6 mb-8">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                <i class="fas fa-magic text-intellihub-primary"></i>
+                <span>Text to Speech</span>
+            </h2>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Text Input -->
+                <div class="space-y-2">
+                    <label for="{{ form.text.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                        {{ form.text.label }}
+                        {% if form.text.help_text %}
+                            <span class="text-gray-500 font-normal">{{ form.text.help_text }}</span>
+                        {% endif %}
+                    </label>
+                    {{ form.text }}
+                    {% if form.text.errors %}
+                        <div class="text-red-400 text-sm">{{ form.text.errors|first }}</div>
+                    {% endif %}
+                    <div class="text-xs text-gray-500">
+                        <span id="char-count">0</span>/4000 characters
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Voice Selection -->
+                    <div class="space-y-2">
+                        <label for="{{ form.voice_id.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                            {{ form.voice_id.label }}
+                        </label>
+                        {{ form.voice_id }}
+                        {% if form.voice_id.errors %}
+                            <div class="text-red-400 text-sm">{{ form.voice_id.errors|first }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="space-y-2">
+                        <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                            {{ form.model.label }}
+                        </label>
+                        {{ form.model }}
+                        {% if form.model.errors %}
+                            <div class="text-red-400 text-sm">{{ form.model.errors|first }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <details class="bg-gray-800 rounded-lg p-4">
+                    <summary class="cursor-pointer text-gray-300 hover:text-white font-medium flex items-center space-x-2">
+                        <i class="fas fa-cog text-intellihub-primary"></i>
+                        <span>Advanced Settings</span>
+                    </summary>
+                    
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Stability -->
+                        <div class="space-y-2">
+                            <label for="{{ form.stability.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                                {{ form.stability.label }}
+                            </label>
+                            {{ form.stability }}
+                            <p class="text-xs text-gray-500">{{ form.stability.help_text }}</p>
+                        </div>
+
+                        <!-- Similarity Boost -->
+                        <div class="space-y-2">
+                            <label for="{{ form.similarity_boost.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                                {{ form.similarity_boost.label }}
+                            </label>
+                            {{ form.similarity_boost }}
+                            <p class="text-xs text-gray-500">{{ form.similarity_boost.help_text }}</p>
+                        </div>
+
+                        <!-- Style -->
+                        <div class="space-y-2">
+                            <label for="{{ form.style.id_for_label }}" class="block text-sm font-medium text-gray-300">
+                                {{ form.style.label }}
+                            </label>
+                            {{ form.style }}
+                            <p class="text-xs text-gray-500">{{ form.style.help_text }}</p>
+                        </div>
+
+                        <!-- Speaker Boost -->
+                        <div class="space-y-2 md:col-span-2 lg:col-span-1">
+                            <label class="flex items-center space-x-2">
+                                {{ form.use_speaker_boost }}
+                                <span class="text-sm font-medium text-gray-300">{{ form.use_speaker_boost.label }}</span>
+                            </label>
+                            <p class="text-xs text-gray-500">{{ form.use_speaker_boost.help_text }}</p>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="bg-red-900/20 border border-red-700 rounded-lg p-4">
+                        <div class="flex items-center space-x-2 text-red-400">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>{{ form.non_field_errors|first }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Submit Button -->
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'quick_audio' %}" 
+                       class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
+                        Quick Generate
+                    </a>
+                    <button type="submit" 
+                            class="px-8 py-2 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white rounded-lg transition-colors flex items-center space-x-2">
+                        <i class="fas fa-play"></i>
+                        <span>Generate Audio</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Recent Requests -->
+        {% if recent_requests %}
+        <div class="bg-intellihub-surface border border-gray-700 rounded-xl p-6">
+            <h2 class="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                <i class="fas fa-history text-intellihub-primary"></i>
+                <span>Recent Audio</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for request in recent_requests %}
+                <div class="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-intellihub-primary transition-colors">
+                    <div class="mb-2">
+                        <p class="text-white font-medium truncate">{{ request.text|truncatechars:50 }}</p>
+                        <p class="text-gray-400 text-sm">{{ request.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                    
+                    {% if request.is_completed %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-green-400 text-sm flex items-center space-x-1">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Completed</span>
+                            </span>
+                            <a href="{% url 'audio_result' request.id %}" 
+                               class="text-intellihub-primary hover:text-white text-sm">
+                                View →
+                            </a>
+                        </div>
+                    {% elif request.is_failed %}
+                        <span class="text-red-400 text-sm flex items-center space-x-1">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Failed</span>
+                        </span>
+                    {% else %}
+                        <span class="text-yellow-400 text-sm flex items-center space-x-1">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Processing</span>
+                        </span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4 text-center">
+                <a href="{% url 'audio_gallery' %}" 
+                   class="text-intellihub-primary hover:text-white">
+                    View All Audio →
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textArea = document.getElementById('{{ form.text.id_for_label }}');
+    const charCount = document.getElementById('char-count');
+    
+    function updateCharCount() {
+        charCount.textContent = textArea.value.length;
+        if (textArea.value.length > 3500) {
+            charCount.classList.add('text-yellow-400');
+        } else {
+            charCount.classList.remove('text-yellow-400');
+        }
+    }
+    
+    textArea.addEventListener('input', updateCharCount);
+    updateCharCount();
+});
+</script>
+{% endblock %}

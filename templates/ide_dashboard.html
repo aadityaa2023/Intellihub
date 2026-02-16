@@ -1,0 +1,158 @@
+{% extends 'base_chat.html' %}
+{% load static %}
+
+{% block title %}IDE Dashboard - IntelliHub{% endblock %}
+
+{% block extra_head %}
+<style>
+    .project-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .project-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        border-color: #6366f1;
+    }
+    
+    .project-type-badge {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .stat-card {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-intellihub-primary to-purple-500 bg-clip-text text-transparent">
+                    Web IDE
+                </h1>
+                <p class="text-gray-400 mt-2">Build, edit, and deploy your projects with AI assistance</p>
+            </div>
+            <a href="{% url 'ide_project_create' %}" 
+               class="px-6 py-3 bg-gradient-to-r from-intellihub-primary to-purple-600 hover:from-purple-600 hover:to-intellihub-primary text-white font-semibold rounded-lg transition duration-300 shadow-lg hover:shadow-xl">
+                <i class="fas fa-plus mr-2"></i>New Project
+            </a>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="stat-card">
+                <div class="text-gray-400 text-sm">Total Projects</div>
+                <div class="text-3xl font-bold text-intellihub-primary">{{ total_projects }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-gray-400 text-sm">Code Executions</div>
+                <div class="text-3xl font-bold text-green-400">{{ preferences.total_executions }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-gray-400 text-sm">AI Queries</div>
+                <div class="text-3xl font-bold text-blue-400">{{ preferences.total_ai_queries }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-gray-400 text-sm">Active Today</div>
+                <div class="text-3xl font-bold text-purple-400">{{ total_projects }}</div>
+            </div>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold mb-4">Your Projects</h2>
+        </div>
+
+        {% if projects %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for project in projects %}
+            <div class="project-card" onclick="window.location.href='{% url 'ide_editor' project.id %}'">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-xl font-bold text-white">{{ project.name }}</h3>
+                    <span class="project-type-badge">{{ project.get_project_type_display }}</span>
+                </div>
+                
+                <p class="text-gray-400 text-sm mb-4 line-clamp-2">
+                    {{ project.description|default:"No description" }}
+                </p>
+                
+                <div class="flex items-center justify-between text-sm text-gray-500">
+                    <div class="flex items-center space-x-4">
+                        <span title="Files">
+                            <i class="fas fa-file-code"></i> {{ project.files.count }}
+                        </span>
+                        <span title="Executions">
+                            <i class="fas fa-play-circle"></i> {{ project.total_executions }}
+                        </span>
+                        {% if project.ai_enabled %}
+                        <span title="AI Enabled" class="text-intellihub-primary">
+                            <i class="fas fa-robot"></i>
+                        </span>
+                        {% endif %}
+                        {% if project.is_public %}
+                        <span title="Public" class="text-green-400">
+                            <i class="fas fa-globe"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs">{{ project.updated_at|timesince }} ago</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if projects.has_other_pages %}
+        <div class="flex justify-center mt-8">
+            <nav class="flex space-x-2">
+                {% if projects.has_previous %}
+                <a href="?page={{ projects.previous_page_number }}" 
+                   class="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700">Previous</a>
+                {% endif %}
+                
+                <span class="px-4 py-2 bg-intellihub-primary text-white rounded">
+                    Page {{ projects.number }} of {{ projects.paginator.num_pages }}
+                </span>
+                
+                {% if projects.has_next %}
+                <a href="?page={{ projects.next_page_number }}" 
+                   class="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700">Next</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-16">
+            <div class="mb-6">
+                <i class="fas fa-code text-6xl text-gray-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">No Projects Yet</h3>
+            <p class="text-gray-400 mb-6">Create your first project to get started with the Web IDE</p>
+            <a href="{% url 'ide_project_create' %}" 
+               class="inline-block px-8 py-3 bg-gradient-to-r from-intellihub-primary to-purple-600 text-white font-semibold rounded-lg hover:shadow-xl transition duration-300">
+                <i class="fas fa-plus mr-2"></i>Create Your First Project
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

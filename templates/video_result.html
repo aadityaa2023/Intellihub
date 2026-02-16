@@ -1,0 +1,264 @@
+{% extends 'base_chat.html' %}
+
+{% block title %}Video Result - IntelliHub{% endblock %}
+
+{% block page_title %}
+    <i class="fas fa-video mr-2 text-intellihub-primary"></i>
+    Video Results
+{% endblock %}
+
+{% block content %}
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Back Navigation -->
+            <div class="mb-6">
+                <a href="{% url 'video_generation' %}" 
+                   class="inline-flex items-center text-intellihub-primary hover:text-intellihub-secondary transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Video Generation
+                </a>
+            </div>
+
+            <!-- Status Header -->
+            <div class="text-center mb-8">
+                {% if video_request.status == 'completed' %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl font-bold text-white mb-2">Video Generated Successfully!</h2>
+                    <p class="text-gray-400">Your video is ready for viewing and download</p>
+                {% elif video_request.status == 'failed' %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl font-bold text-white mb-2">Video Generation Failed</h2>
+                    <p class="text-gray-400">There was an error generating your video</p>
+                {% else %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-yellow-500/20 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-yellow-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl font-bold text-white mb-2">Video Processing...</h2>
+                    <p class="text-gray-400">Your video is being generated, please wait</p>
+                {% endif %}
+            </div>
+
+            <!-- Video Content -->
+            {% if video_request.status == 'completed' and videos %}
+                <div class="space-y-8">
+                    {% for video in videos %}
+                        <div class="bg-intellihub-surface rounded-2xl p-6 border border-gray-800">
+                            <!-- Video Player -->
+                            <div class="mb-6">
+                                <div class="relative bg-black rounded-xl overflow-hidden">
+                                    <video 
+                                        controls 
+                                        class="w-full h-auto max-h-96 mx-auto"
+                                        preload="metadata"
+                                        poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='50'%3E🎬%3C/text%3E%3C/svg%3E"
+                                    >
+                                        <source src="{{ video.video_url }}" type="{{ video.mime_type }}">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+
+                            <!-- Video Actions -->
+                            <div class="flex flex-wrap gap-3 mb-6">
+                                <a 
+                                    href="{{ video.video_url }}" 
+                                    download="generated_video_{{ video.id }}.mp4"
+                                    class="inline-flex items-center px-4 py-2 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white rounded-lg transition-colors"
+                                >
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Download Video
+                                </a>
+                                
+                                <button 
+                                    onclick="shareVideo()"
+                                    class="inline-flex items-center px-4 py-2 bg-intellihub-secondary hover:bg-intellihub-primary text-white rounded-lg transition-colors"
+                                >
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+                                    </svg>
+                                    Share
+                                </button>
+                                
+                                <button 
+                                    onclick="toggleFavorite('{{ video.id }}')"
+                                    class="inline-flex items-center px-4 py-2 border border-gray-600 hover:border-intellihub-primary text-gray-300 hover:text-intellihub-primary rounded-lg transition-colors"
+                                >
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                    </svg>
+                                    {% if video.favorited %}Remove from Favorites{% else %}Add to Favorites{% endif %}
+                                </button>
+                            </div>
+
+                            <!-- Video Info -->
+                            <div class="bg-intellihub-surface-light rounded-xl p-4">
+                                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <h4 class="font-medium text-intellihub-primary mb-2">Video Details</h4>
+                                        <dl class="space-y-1">
+                                            <div class="flex justify-between">
+                                                <dt class="text-gray-400">File Size:</dt>
+                                                <dd class="text-gray-300">
+                                                    {% if video.file_size %}
+                                                        {{ video.file_size|filesizeformat }}
+                                                    {% else %}
+                                                        Unknown
+                                                    {% endif %}
+                                                </dd>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <dt class="text-gray-400">Format:</dt>
+                                                <dd class="text-gray-300">{{ video.mime_type|default:"video/mp4" }}</dd>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <dt class="text-gray-400">Created:</dt>
+                                                <dd class="text-gray-300">{{ video.created_at|date:"M j, Y H:i" }}</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-intellihub-primary mb-2">Generation Info</h4>
+                                        <dl class="space-y-1">
+                                            <div class="flex justify-between">
+                                                <dt class="text-gray-400">Model:</dt>
+                                                <dd class="text-gray-300">{{ video_request.model|default:"Default" }}</dd>
+                                            </div>
+                                            {% if video_request.generation_time %}
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-400">Generation Time:</dt>
+                                                    <dd class="text-gray-300">{{ video_request.generation_time|floatformat:1 }}s</dd>
+                                                </div>
+                                            {% endif %}
+                                            {% if video_request.cached %}
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-400">Source:</dt>
+                                                    <dd class="text-green-400">Cached</dd>
+                                                </div>
+                                            {% endif %}
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elif video_request.status == 'failed' %}
+                <!-- Error Display -->
+                <div class="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-red-400 mb-3">Error Details</h3>
+                    <p class="text-red-300">{{ video_request.error_message|default:"An unknown error occurred during video generation." }}</p>
+                    <div class="mt-4">
+                        <a href="{% url 'video_generation' %}" 
+                           class="inline-flex items-center px-4 py-2 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white rounded-lg transition-colors">
+                            Try Again
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Processing Display -->
+                <div class="bg-intellihub-surface rounded-xl p-8 text-center">
+                    <div class="animate-spin w-12 h-12 border-4 border-intellihub-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-400">Processing your video... This may take a few minutes.</p>
+                    <button 
+                        onclick="location.reload()" 
+                        class="mt-4 inline-flex items-center px-4 py-2 bg-intellihub-secondary hover:bg-intellihub-primary text-white rounded-lg transition-colors"
+                    >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Refresh Status
+                    </button>
+                </div>
+            {% endif %}
+
+            <!-- Request Details -->
+            <div class="mt-8 bg-intellihub-surface rounded-xl p-6 border border-gray-800">
+                <h3 class="text-lg font-semibold text-white mb-4">Request Details</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Prompt</label>
+                        <p class="text-gray-300 bg-intellihub-surface-light rounded-lg p-3">{{ video_request.prompt }}</p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-3 gap-4 text-sm">
+                        {% if video_request.duration %}
+                            <div>
+                                <label class="block text-gray-400 mb-1">Duration</label>
+                                <p class="text-gray-300">{{ video_request.duration }}s</p>
+                            </div>
+                        {% endif %}
+                        {% if video_request.fps %}
+                            <div>
+                                <label class="block text-gray-400 mb-1">Frame Rate</label>
+                                <p class="text-gray-300">{{ video_request.fps }} FPS</p>
+                            </div>
+                        {% endif %}
+                        {% if video_request.width and video_request.height %}
+                            <div>
+                                <label class="block text-gray-400 mb-1">Dimensions</label>
+                                <p class="text-gray-300">{{ video_request.width }}×{{ video_request.height }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex flex-wrap gap-4 justify-center">
+                <a href="{% url 'video_generation' %}" 
+                   class="inline-flex items-center px-6 py-3 bg-intellihub-primary hover:bg-intellihub-primary-dark text-white rounded-xl transition-colors">
+                    Generate Another Video
+                </a>
+                <a href="{% url 'video_gallery' %}" 
+                   class="inline-flex items-center px-6 py-3 border border-gray-600 hover:border-intellihub-primary text-gray-300 hover:text-intellihub-primary rounded-xl transition-colors">
+                    View Gallery
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function shareVideo() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Generated Video',
+                    text: 'Check out this video I generated with AI!',
+                    url: window.location.href
+                });
+            } else {
+                // Fallback: copy URL to clipboard
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert('Video link copied to clipboard!');
+                });
+            }
+        }
+
+        function toggleFavorite(videoId) {
+            // Implement favorite toggle functionality
+            console.log('Toggle favorite for video:', videoId);
+            // You can implement an AJAX call here to update the favorite status
+        }
+
+        // Auto-refresh for processing status
+        {% if video_request.status == 'processing' or video_request.status == 'pending' %}
+        setTimeout(function() {
+            location.reload();
+        }, 10000); // Refresh every 10 seconds
+        {% endif %}
+    </script>
+{% endblock %}

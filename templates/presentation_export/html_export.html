@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ presentation.title }} - IntelliHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Print handling */
+        @media print {
+            .slide { page-break-after: always; }
+            .controls { display: none; }
+            .navigation { display: none; }
+        }
+
+        /* Slide canvas */
+        .slide-container { aspect-ratio: 16/9; }
+
+        /* Color schemes (apply on body: scheme-*) */
+        .scheme-blue .slide-container { background: linear-gradient(135deg, #3B82F6, #1E40AF); }
+        .scheme-green .slide-container { background: linear-gradient(135deg, #10B981, #059669); }
+        .scheme-purple .slide-container { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+        .scheme-orange .slide-container { background: linear-gradient(135deg, #F59E0B, #D97706); }
+        .scheme-red .slide-container { background: linear-gradient(135deg, #EF4444, #DC2626); }
+        .scheme-teal .slide-container { background: linear-gradient(135deg, #14B8A6, #0D9488); }
+        .scheme-gray .slide-container { background: linear-gradient(135deg, #6B7280, #4B5563); }
+
+        /* Themes */
+        .theme-modern { font-family: 'Inter', system-ui, sans-serif; }
+        .theme-corporate { font-family: 'Georgia', serif; }
+        .theme-creative { font-family: 'Comic Sans MS', cursive; }
+        .theme-minimal { font-family: 'Arial', sans-serif; }
+        .theme-academic { font-family: 'Times New Roman', serif; }
+        .theme-tech { font-family: 'Monaco', monospace; }
+
+        /* Animations */
+        .slide-enter { animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Bullet styling */
+        .bullet-point { position: relative; padding-left: 1.5rem; }
+        .bullet-point::before { content: '•'; position: absolute; left: 0; color: #FCD34D; font-size: 1.25em; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white theme-{{ presentation.theme|default:'modern' }} scheme-{{ presentation.color_scheme|default:'blue' }}" 
+      x-data="presentationPlayer()">
+
+    <!-- Header -->
+    <header class="controls fixed top-0 left-0 right-0 bg-gray-800/90 backdrop-blur z-50 p-4">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div>
+                <h1 class="text-xl font-bold">{{ presentation.title }}</h1>
+                {% if presentation.description %}
+                    <p class="text-sm text-gray-400">{{ presentation.description }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-400">
+                    <span x-text="currentSlide + 1"></span> / <span x-text="totalSlides"></span>
+                </div>
+                
+                <button @click="toggleFullscreen()" 
+                        class="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded">
+                    <i class="fas fa-expand"></i>
+                </button>
+                
+                <button @click="togglePresentation()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <span x-show="!isPresenting">Start Presentation</span>
+                    <span x-show="isPresenting">Exit</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Presentation Container -->
+    <main id="presentation-root" class="pt-20" :class="{ 'pt-0': isPresenting }" data-total-slides="{{ slides|length }}">
+        <div class="max-w-6xl mx-auto p-4" :class="{ 'max-w-none p-0': isPresenting }">
+            
+            <!-- Slides -->
+            {% for slide_data in slides %}
+            <div class="slide" 
+                 x-show="currentSlide === {{ forloop.counter0 }}"
+                 x-transition:enter="slide-enter">
+                
+                <div class="slide-container rounded-lg overflow-hidden shadow-2xl"
+                     :class="{ 'rounded-none shadow-none h-screen': isPresenting }">
+                    
+                    <div class="h-full p-8 md:p-12 text-white relative overflow-hidden"
+                         :class="{ 'p-16': isPresenting }">
+                        
+                        <!-- Background Pattern -->
+                        <div class="absolute inset-0 opacity-10">
+                            {% if presentation.theme == 'modern' %}
+                                <div class="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -translate-y-32 translate-x-32"></div>
+                                <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-24 -translate-x-24"></div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Slide Content -->
+                        <div class="relative z-10 h-full flex flex-col">
+                            {% if slide_data.slide.slide_type == 'title' %}
+                                <!-- Title Slide -->
+                                <div class="flex-1 flex items-center justify-center text-center">
+                                    <div>
+                                        <h1 class="text-4xl md:text-6xl font-bold mb-4" 
+                                            :class="{ 'text-8xl': isPresenting }">
+                                            {{ slide_data.slide.title|default:"Presentation Title" }}
+                                        </h1>
+                                        {% if slide_data.slide.subtitle %}
+                                            <p class="text-xl md:text-2xl text-white/80" 
+                                               :class="{ 'text-4xl': isPresenting }">
+                                                {{ slide_data.slide.subtitle }}
+                                            </p>
+                                        {% endif %}
+                                        {% if forloop.first and presentation.target_audience %}
+                                            <p class="text-lg text-white/60 mt-4">
+                                                For {{ presentation.target_audience }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                            {% elif slide_data.slide.slide_type == 'bullet_points' %}
+                                <!-- Bullet Points Slide -->
+                                <div class="mb-6">
+                                    <h2 class="text-3xl md:text-4xl font-bold" 
+                                        :class="{ 'text-6xl': isPresenting }">
+                                        {{ slide_data.slide.title|default:"Slide Title" }}
+                                    </h2>
+                                </div>
+                                
+                                <div class="flex-1 flex items-center">
+                                    <div class="w-full">
+                                        {% for element in slide_data.elements %}
+                                            {% if element.element_type == 'bullet_list' %}
+                                                <div class="space-y-3 text-xl md:text-2xl" :class="{ 'text-4xl space-y-6': isPresenting }"
+                                                     x-data="{ lines: [] }"
+                                                     x-init="lines = ($el.dataset.content || '').split('\n').map(s => s.trim()).filter(Boolean)"
+                                                     data-content="{{ element.content|escapejs }}">
+                                                    <template x-for="(line, idx) in lines" :key="idx">
+                                                        <div class="bullet-point" x-text="line"></div>
+                                                    </template>
+                                                </div>
+                                            {% endif %}
+                                        {% empty %}
+                                            {% if slide_data.slide.content %}
+                                                <div class="text-xl md:text-2xl space-y-4" :class="{ 'text-4xl space-y-8': isPresenting }"
+                                                     x-data="{ lines: [] }"
+                                                     x-init="lines = ($el.dataset.content || '').split('\n').map(s => s.trim()).filter(Boolean)"
+                                                     data-content="{{ slide_data.slide.content|escapejs }}">
+                                                    <template x-for="(line, idx) in lines" :key="idx">
+                                                        <div class="bullet-point" x-text="line"></div>
+                                                    </template>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                            {% elif slide_data.slide.slide_type == 'two_column' %}
+                                <!-- Two Column Slide -->
+                                <div class="mb-6">
+                                    <h2 class="text-3xl md:text-4xl font-bold" 
+                                        :class="{ 'text-6xl': isPresenting }">
+                                        {{ slide_data.slide.title|default:"Slide Title" }}
+                                    </h2>
+                                </div>
+                                
+                                <div class="flex-1 grid md:grid-cols-2 gap-8" 
+                                     :class="{ 'gap-16': isPresenting }">
+                                    <div class="text-lg md:text-xl" 
+                                         :class="{ 'text-3xl': isPresenting }">
+                                        {{ slide_data.slide.content|linebreaks }}
+                                    </div>
+                                    <div class="bg-white/10 rounded-lg p-6 flex items-center justify-center">
+                                        <div class="text-center text-white/60">
+                                            <i class="fas fa-chart-bar text-6xl mb-4" 
+                                               :class="{ 'text-8xl': isPresenting }"></i>
+                                            <p>Visual Content Placeholder</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            {% elif slide_data.slide.slide_type == 'quote' %}
+                                <!-- Quote Slide -->
+                                <div class="flex-1 flex items-center justify-center text-center">
+                                    <div>
+                                        <div class="text-6xl text-yellow-300 mb-6" 
+                                             :class="{ 'text-8xl': isPresenting }">"</div>
+                                        <blockquote class="text-2xl md:text-3xl font-light italic mb-6" 
+                                                    :class="{ 'text-5xl': isPresenting }">
+                                            {{ slide_data.slide.content|default:"Quote content" }}
+                                        </blockquote>
+                                        {% if slide_data.slide.subtitle %}
+                                            <cite class="text-xl text-white/80" 
+                                                  :class="{ 'text-3xl': isPresenting }">
+                                                — {{ slide_data.slide.subtitle }}
+                                            </cite>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                            {% elif slide_data.slide.slide_type == 'call_to_action' %}
+                                <!-- Call to Action Slide -->
+                                <div class="flex-1 flex items-center justify-center text-center">
+                                    <div>
+                                        <h2 class="text-4xl md:text-5xl font-bold mb-6" 
+                                            :class="{ 'text-8xl': isPresenting }">
+                                            {{ slide_data.slide.title|default:"Take Action" }}
+                                        </h2>
+                                        {% if slide_data.slide.content %}
+                                            <p class="text-xl md:text-2xl text-white/90 mb-8" 
+                                               :class="{ 'text-4xl': isPresenting }">
+                                                {{ slide_data.slide.content }}
+                                            </p>
+                                        {% endif %}
+                                        <div class="bg-white/20 backdrop-blur px-8 py-4 rounded-full inline-block">
+                                            <span class="text-xl font-semibold" 
+                                                  :class="{ 'text-3xl': isPresenting }">
+                                                Ready to get started?
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            {% else %}
+                                <!-- Default Content Slide -->
+                                <div class="mb-6">
+                                    <h2 class="text-3xl md:text-4xl font-bold" 
+                                        :class="{ 'text-6xl': isPresenting }">
+                                        {{ slide_data.slide.title|default:"Slide Title" }}
+                                    </h2>
+                                    {% if slide_data.slide.subtitle %}
+                                        <p class="text-xl text-white/80 mt-2" 
+                                           :class="{ 'text-3xl': isPresenting }">
+                                            {{ slide_data.slide.subtitle }}
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if slide_data.slide.content %}
+                                    <div class="flex-1 flex items-center">
+                                        <div class="text-lg md:text-xl leading-relaxed" 
+                                             :class="{ 'text-3xl': isPresenting }">
+                                            {{ slide_data.slide.content|linebreaks }}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <!-- Slide Number -->
+                            <div class="absolute bottom-4 right-4 text-white/50 text-sm"
+                                 :class="{ 'text-lg': isPresenting }"
+                                 x-show="!isPresenting || currentSlide > 0">
+                                {{ slide_data.slide.slide_number }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Speaker Notes -->
+                {% if include_notes and slide_data.slide.notes %}
+                <div class="mt-6 bg-gray-800 rounded-lg p-4" x-show="!isPresenting">
+                    <h4 class="text-sm font-medium text-gray-400 mb-2">Speaker Notes:</h4>
+                    <p class="text-sm text-gray-300">{{ slide_data.slide.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Navigation -->
+    <div class="navigation fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
+         :class="{ 'opacity-0 hover:opacity-100 transition-opacity': isPresenting }">
+        <div class="bg-gray-800/90 backdrop-blur rounded-full px-6 py-3 flex items-center space-x-4">
+            <button @click="previousSlide()" 
+                    :disabled="currentSlide === 0"
+                    class="text-white hover:text-blue-400 disabled:text-gray-600 transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            
+            <div class="flex space-x-2">
+                {% for slide_data in slides %}
+                <button @click="currentSlide = {{ forloop.counter0 }}"
+                        :class="currentSlide === {{ forloop.counter0 }} ? 'bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'"
+                        class="w-2 h-2 rounded-full transition-colors">
+                </button>
+                {% endfor %}
+            </div>
+            
+            <button @click="nextSlide()" 
+                    :disabled="currentSlide === totalSlides - 1"
+                    class="text-white hover:text-blue-400 disabled:text-gray-600 transition-colors">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Presentation Info -->
+    <div class="fixed bottom-4 right-4 text-xs text-gray-500 z-40" x-show="!isPresenting">
+        Generated by IntelliHub AI • {{ presentation.created_at|date:"M d, Y" }}
+    </div>
+
+    <script>
+        function presentationPlayer() {
+            return {
+                currentSlide: 0,
+                totalSlides: 1,
+                isPresenting: false,
+                
+                init() {
+                    // Initialize slide count from data attribute
+                    const root = document.getElementById('presentation-root');
+                    const n = parseInt(root?.dataset.totalSlides || '0', 10);
+                    this.totalSlides = (Number.isFinite(n) && n > 0) ? n : 1;
+                    // Keyboard navigation
+                    document.addEventListener('keydown', (e) => {
+                        switch(e.code) {
+                            case 'ArrowRight':
+                            case 'Space':
+                                e.preventDefault();
+                                this.nextSlide();
+                                break;
+                            case 'ArrowLeft':
+                                e.preventDefault();
+                                this.previousSlide();
+                                break;
+                            case 'F11':
+                                e.preventDefault();
+                                this.toggleFullscreen();
+                                break;
+                            case 'Escape':
+                                if (this.isPresenting) {
+                                    this.togglePresentation();
+                                }
+                                break;
+                        }
+                    });
+                    
+                    // Auto-start in presentation mode if in fullscreen
+                    if (window.location.hash === '#present') {
+                        this.togglePresentation();
+                    }
+                },
+                
+                nextSlide() {
+                    if (this.currentSlide < this.totalSlides - 1) {
+                        this.currentSlide++;
+                    }
+                },
+                
+                previousSlide() {
+                    if (this.currentSlide > 0) {
+                        this.currentSlide--;
+                    }
+                },
+                
+                togglePresentation() {
+                    this.isPresenting = !this.isPresenting;
+                    if (this.isPresenting) {
+                        document.body.classList.add('overflow-hidden');
+                    } else {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                },
+                
+                toggleFullscreen() {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
