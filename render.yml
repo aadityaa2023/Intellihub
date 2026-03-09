@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: IntelliHub
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    region: frankfurt
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: WEB_CONCURRENCY
+        value: "3"
+      - key: DJANGO_SETTINGS_MODULE
+        value: "IntelliHub.settings"
+    # Do not store secrets here; set them in the Render dashboard as needed.
+    # Example secrets to configure on Render: SECRET_KEY, DATABASE_URL
