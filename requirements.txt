@@ -10,6 +10,7 @@ python-dotenv>=1.0.0,<2
 ### AI/ML dependencies
 huggingface_hub>=0.20.0,<1.0.0
 google-genai>=0.5.0  # For Google Veo video generation
+cryptography>=41.0.0,<43.0.0  # Pinned: >=42 Rust extension crashes on some platforms
 
 ### Testing
 pytest>=8.0.0,<9

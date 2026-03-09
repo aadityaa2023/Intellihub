@@ -18,7 +18,7 @@ try:
     from google import genai
     from google.genai import types
     VEO_AVAILABLE = True
-except ImportError:
+except Exception:
     VEO_AVAILABLE = False
     logger.warning("Google genai not available. Install with: pip install google-genai")
 
